@@ -1,5 +1,6 @@
 from datetime import datetime
 import time
+import threading
 import requests
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -69,6 +70,135 @@ def get_db_connection():
     conn.execute('PRAGMA foreign_keys = ON;')
     conn.execute('PRAGMA journal_mode=WAL;')
     return conn
+
+# ==================== Background Evaluation Jobs ====================
+def ensure_evaluation_jobs_table():
+    """Create the evaluation_jobs table used for async answer-sheet processing."""
+    conn = get_db_connection()
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS evaluation_jobs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id INTEGER NOT NULL,
+            exam_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            file_path TEXT,
+            status TEXT DEFAULT 'processing',  -- processing | completed | failed
+            message TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+ensure_evaluation_jobs_table()
+
+
+def _run_evaluation_job(job_id, exam_id, student_id, user_id, file_path, exam_title):
+    """
+    Heavy answer-sheet evaluation run in a background thread so the HTTP
+    request returns immediately (avoids platform 502/timeout). Progress is
+    tracked via the evaluation_jobs table, polled by the frontend.
+    """
+    conn = get_db_connection()
+    try:
+        # ── Fetch questions ───────────────────────────────────────────────────
+        questions = conn.execute('''
+            SELECT id, question_id, question_text, model_answer_text, marks
+            FROM model_answers
+            WHERE exam_id = ?
+            ORDER BY question_id
+        ''', (exam_id,)).fetchall()
+
+        if not questions:
+            raise ValueError('No questions found for this exam.')
+
+        # ── LLM pipeline (extract + evaluate) ─────────────────────────────────
+        from pdf_llm_extractor import process_answer_sheet
+
+        results = process_answer_sheet(
+            pdf_path=file_path,
+            questions=[dict(q) for q in questions],
+        )
+
+        # ── Persist results ───────────────────────────────────────────────────
+        cursor = conn.cursor()
+        total_scored = 0.0
+        total_possible = 0.0
+
+        for res in results:
+            total_scored += res['awarded_marks']
+            total_possible += res['max_marks']
+
+            cursor.execute('''
+                INSERT INTO student_answers
+                    (student_id, exam_id, question_id, answer_text,
+                     file_path, status, uploaded_at)
+                VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ''', (
+                student_id,
+                exam_id,
+                res['question_id'],
+                res['student_answer'][:5000],
+                file_path,
+                res['status'],
+            ))
+            student_answer_id = cursor.lastrowid
+
+            cursor.execute('''
+                INSERT INTO evaluation_results
+                    (student_answer_id, model_answer_id,
+                     content_score, concept_score, grammar_score,
+                     total_score, evaluated_by_ai, evaluated_at)
+                VALUES (?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+            ''', (
+                student_answer_id,
+                res['model_answer_id'],
+                res['score_percentage'],
+                res['score_percentage'],
+                85.0,
+                res['awarded_marks'],
+            ))
+            evaluation_id = cursor.lastrowid
+
+            missing_kw = ', '.join(res['missing_concepts'])
+            cursor.execute('''
+                INSERT INTO feedback
+                    (evaluation_id, feedback_text, missing_keywords, created_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ''', (evaluation_id, res['feedback'], missing_kw))
+
+        cursor.execute(
+            'INSERT INTO activity_logs (user_id, action) VALUES (?, ?)',
+            (user_id, f'Submitted exam: {exam_title}')
+        )
+
+        percentage = round((total_scored / total_possible) * 100, 2) if total_possible else 0
+        cursor.execute(
+            '''UPDATE evaluation_jobs
+               SET status = 'completed', message = ?, updated_at = CURRENT_TIMESTAMP
+               WHERE id = ?''',
+            (f'Score: {total_scored:.1f}/{total_possible:.1f} ({percentage}%)', job_id)
+        )
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        conn.execute(
+            '''UPDATE evaluation_jobs
+               SET status = 'failed', message = ?, updated_at = CURRENT_TIMESTAMP
+               WHERE id = ?''',
+            (str(e)[:500], job_id)
+        )
+        conn.commit()
+        # Clean up the saved PDF so the student can retry.
+        if file_path and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except OSError:
+                pass
+    finally:
+        conn.close()
 
 # ==================== Login Required Decorator ====================
 def login_required(f):
@@ -2976,12 +3106,31 @@ def upload_answer_sheet(exam_id):
             conn.close()
             return redirect(request.url)
 
-        file_path = None
+        # ── Guard: a job is already being processed for this student+exam ──────
+        active_job = conn.execute(
+            '''SELECT id FROM evaluation_jobs
+               WHERE student_id = ? AND exam_id = ? AND status = 'processing'
+               LIMIT 1''',
+            (student_profile['id'], exam_id)
+        ).fetchone()
+        if active_job:
+            conn.close()
+            return redirect(url_for('evaluation_processing', job_id=active_job['id']))
+
+        # ── Validate questions exist before accepting the upload ──────────────
+        questions = conn.execute(
+            'SELECT id FROM model_answers WHERE exam_id = ? LIMIT 1',
+            (exam_id,)
+        ).fetchone()
+        if not questions:
+            flash('No questions found for this exam.', 'danger')
+            conn.close()
+            return redirect(request.url)
+
         try:
             # ── Save PDF ──────────────────────────────────────────────────────
             upload_dir = STUDENT_ANSWERS_FOLDER
-
-            filename  = secure_filename(answer_file.filename)
+            secure_filename(answer_file.filename)  # validate name
             timestamp = int(time.time())
             file_path = os.path.join(
                 upload_dir,
@@ -2989,104 +3138,106 @@ def upload_answer_sheet(exam_id):
             )
             answer_file.save(file_path)
 
-            # ── Fetch questions ───────────────────────────────────────────────
-            questions = conn.execute('''
-                SELECT id, question_id, question_text, model_answer_text, marks
-                FROM model_answers
-                WHERE exam_id = ?
-                ORDER BY question_id
-            ''', (exam_id,)).fetchall()
-
-            if not questions:
-                flash('No questions found for this exam.', 'danger')
-                os.remove(file_path)
-                conn.close()
-                return redirect(request.url)
-
-            # ── LLM pipeline (extract + evaluate in one call) ─────────────────
-            from pdf_llm_extractor import process_answer_sheet
-
-            results = process_answer_sheet(
-                pdf_path=file_path,
-                questions=[dict(q) for q in questions],
-            )
-
-            # ── Persist results ───────────────────────────────────────────────
+            # ── Create job row ────────────────────────────────────────────────
             cursor = conn.cursor()
-            total_scored   = 0.0
-            total_possible = 0.0
-
-            for res in results:
-                total_scored   += res['awarded_marks']
-                total_possible += res['max_marks']
-
-                # student_answers row
-                cursor.execute('''
-                    INSERT INTO student_answers
-                        (student_id, exam_id, question_id, answer_text,
-                         file_path, status, uploaded_at)
-                    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                ''', (
-                    student_profile['id'],
-                    exam_id,
-                    res['question_id'],
-                    res['student_answer'][:5000],   # cap to column limit
-                    file_path,
-                    res['status'],
-                ))
-                student_answer_id = cursor.lastrowid
-
-                # evaluation_results row
-                cursor.execute('''
-                    INSERT INTO evaluation_results
-                        (student_answer_id, model_answer_id,
-                         content_score, concept_score, grammar_score,
-                         total_score, evaluated_by_ai, evaluated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
-                ''', (
-                    student_answer_id,
-                    res['model_answer_id'],
-                    res['score_percentage'],
-                    res['score_percentage'],
-                    85.0,                           # grammar placeholder
-                    res['awarded_marks'],
-                ))
-                evaluation_id = cursor.lastrowid
-
-                # feedback row
-                missing_kw = ', '.join(res['missing_concepts'])
-                cursor.execute('''
-                    INSERT INTO feedback
-                        (evaluation_id, feedback_text, missing_keywords, created_at)
-                    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-                ''', (evaluation_id, res['feedback'], missing_kw))
-
-            # activity log
             cursor.execute(
-                'INSERT INTO activity_logs (user_id, action) VALUES (?, ?)',
-                (session['user_id'], f'Submitted exam: {exam["exam_title"]}')
+                '''INSERT INTO evaluation_jobs
+                       (student_id, exam_id, user_id, file_path, status)
+                   VALUES (?, ?, ?, ?, 'processing')''',
+                (student_profile['id'], exam_id, session['user_id'], file_path)
             )
-
+            job_id = cursor.lastrowid
             conn.commit()
             conn.close()
 
-            percentage = round((total_scored / total_possible) * 100, 2) if total_possible else 0
-            flash(
-                f'✅ Exam submitted! Score: {total_scored:.1f}/{total_possible:.1f} ({percentage}%)',
-                'success'
+            # ── Spawn background evaluation (returns immediately, no 502) ─────
+            thread = threading.Thread(
+                target=_run_evaluation_job,
+                args=(
+                    job_id,
+                    exam_id,
+                    student_profile['id'],
+                    session['user_id'],
+                    file_path,
+                    exam['exam_title'],
+                ),
+                daemon=True,
             )
-            return redirect(url_for('submission_result', exam_id=exam_id))
+            thread.start()
+
+            return redirect(url_for('evaluation_processing', job_id=job_id))
 
         except Exception as e:
-            flash(f'❌ Error processing answer sheet: {str(e)}', 'danger')
-            if file_path and os.path.exists(file_path):
-                os.remove(file_path)
+            flash(f'❌ Error starting evaluation: {str(e)}', 'danger')
             conn.close()
             return redirect(request.url)
 
     # ── GET ───────────────────────────────────────────────────────────────────
     conn.close()
     return render_template('student/upload_answer_sheet.html', exam=exam)
+
+
+@app.route('/student/evaluation_processing/<int:job_id>')
+@login_required
+@student_required
+def evaluation_processing(job_id):
+    """Waiting page shown while the answer sheet is evaluated in the background."""
+    conn = get_db_connection()
+    student_profile = conn.execute(
+        'SELECT id FROM student_profile WHERE user_id = ?',
+        (session['user_id'],)
+    ).fetchone()
+
+    job = conn.execute(
+        'SELECT * FROM evaluation_jobs WHERE id = ?',
+        (job_id,)
+    ).fetchone()
+    conn.close()
+
+    if not job or job['student_id'] != student_profile['id']:
+        flash('Evaluation job not found.', 'danger')
+        return redirect(url_for('available_exams'))
+
+    return render_template(
+        'student/evaluation_processing.html',
+        job_id=job_id,
+        exam_id=job['exam_id'],
+    )
+
+
+@app.route('/student/evaluation_status/<int:job_id>')
+@login_required
+@student_required
+def evaluation_status(job_id):
+    """Lightweight JSON endpoint polled by the processing page."""
+    conn = get_db_connection()
+    student_profile = conn.execute(
+        'SELECT id FROM student_profile WHERE user_id = ?',
+        (session['user_id'],)
+    ).fetchone()
+
+    job = conn.execute(
+        'SELECT * FROM evaluation_jobs WHERE id = ?',
+        (job_id,)
+    ).fetchone()
+    conn.close()
+
+    if not job or job['student_id'] != student_profile['id']:
+        return jsonify({'status': 'not_found'}), 404
+
+    response = {
+        'status': job['status'],          # processing | completed | failed
+        'message': job['message'] or '',
+    }
+
+    if job['status'] == 'completed':
+        response['redirect_url'] = url_for('submission_result', exam_id=job['exam_id'])
+    elif job['status'] == 'failed':
+        response['redirect_url'] = url_for('upload_answer_sheet', exam_id=job['exam_id'])
+
+    return jsonify(response)
+
+
 # @app.route('/student/upload_answer_sheet/<int:exam_id>', methods=['GET', 'POST'])
 # @login_required
 # @student_required

@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4><i class="fas fa-cogs"></i> Evaluating Your Answer Sheet</h4>
+                </div>
+
+                <div class="card-body text-center py-5">
+                    <div id="processingView">
+                        <div class="spinner-border text-success mb-4" role="status"
+                             style="width: 3.5rem; height: 3.5rem;">
+                            <span class="visually-hidden">Processing...</span>
+                        </div>
+                        <h5 class="mb-2">Please wait while we evaluate your answers</h5>
+                        <p class="text-muted mb-0" id="statusMessage">
+                            This can take a minute or two. Keep this page open.
+                        </p>
+                        <p class="text-muted mt-3 small">
+                            <i class="fas fa-info-circle"></i>
+                            You'll be redirected automatically once evaluation is complete.
+                        </p>
+                    </div>
+
+                    <div id="failedView" style="display: none;">
+                        <div class="text-danger mb-3">
+                            <i class="fas fa-exclamation-triangle fa-3x"></i>
+                        </div>
+                        <h5 class="mb-2">Evaluation Failed</h5>
+                        <p class="text-muted" id="errorMessage"></p>
+                        <a href="#" id="retryLink" class="btn btn-warning mt-2">
+                            <i class="fas fa-redo"></i> Try Again
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const jobId = {{ job_id | tojson }};
+    const statusUrl = "{{ url_for('evaluation_status', job_id=job_id) }}";
+    let stopped = false;
+
+    function showFailed(message, redirectUrl) {
+        document.getElementById('processingView').style.display = 'none';
+        const failedView = document.getElementById('failedView');
+        failedView.style.display = 'block';
+        document.getElementById('errorMessage').textContent =
+            message || 'Something went wrong during evaluation.';
+        if (redirectUrl) {
+            document.getElementById('retryLink').setAttribute('href', redirectUrl);
+        }
+    }
+
+    async function poll() {
+        if (stopped) return;
+        try {
+            const res = await fetch(statusUrl, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) {
+                // Job not found or auth issue — stop politely.
+                showFailed('Could not retrieve evaluation status.');
+                stopped = true;
+                return;
+            }
+            const data = await res.json();
+
+            if (data.status === 'completed') {
+                stopped = true;
+                document.getElementById('statusMessage').textContent =
+                    data.message || 'Done! Redirecting to your results...';
+                window.location.href = data.redirect_url;
+                return;
+            }
+
+            if (data.status === 'failed') {
+                stopped = true;
+                showFailed(data.message, data.redirect_url);
+                return;
+            }
+
+            // still processing
+            if (data.message) {
+                document.getElementById('statusMessage').textContent = data.message;
+            }
+        } catch (err) {
+            // Network hiccup — keep trying.
+        }
+
+        if (!stopped) {
+            setTimeout(poll, 4000);
+        }
+    }
+
+    // Kick off after a short initial delay.
+    setTimeout(poll, 2000);
+})();
+</script>
+{% endblock %}
