@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-clipboard-list"></i> Available Exams</h2>
+        <a href="{{ url_for('my_submissions') }}" class="btn btn-info">
+            <i class="fas fa-history"></i> My Submissions
+        </a>
+    </div>
+
+    {% if exams %}
+    <div class="row">
+        {% for exam in exams %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm exam-card {% if exam.is_submitted > 0 %}border-success{% endif %}">
+                <div class="card-header bg-{{ 'success' if exam.is_submitted > 0 else 'primary' }} text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ exam.exam_title }}</h5>
+                        {% if exam.is_submitted > 0 %}
+                        <span class="badge bg-light text-success">
+                            <i class="fas fa-check-circle"></i> Submitted
+                        </span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="fas fa-clock"></i> Pending
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <small class="text-muted">Subject</small>
+                            <p class="mb-0"><strong>{{ exam.subject_name }}</strong></p>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Class</small>
+                            <p class="mb-0"><strong>{{ exam.class_name }}</strong></p>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <small class="text-muted">Total Marks</small>
+                            <p class="mb-0"><strong>{{ exam.total_marks }}</strong></p>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Duration</small>
+                            <p class="mb-0"><strong>{{ exam.duration_minutes }} min</strong></p>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <small class="text-muted">Questions</small>
+                            <p class="mb-0"><strong>{{ exam.total_questions }}</strong></p>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Difficulty</small>
+                            <p class="mb-0">
+                                <span class="badge bg-{{ 'success' if exam.difficulty_level == 'Easy' else ('warning' if exam.difficulty_level == 'Medium' else 'danger') }}">
+                                    {{ exam.difficulty_level }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- <div class="mb-3">
+                        <small class="text-muted">Exam Period</small>
+                        <p class="mb-0">
+                            <i class="far fa-calendar-alt"></i> 
+                            {{ exam.start_date[:16] }} to {{ exam.end_date[:16] }}
+                        </p>
+                    </div> -->
+                </div>
+                
+                <div class="card-footer bg-light">
+                    <div class="d-flex gap-2">
+                        {% if exam.is_submitted > 0 %}
+                        <a href="{{ url_for('submission_result', exam_id=exam.id) }}" class="btn btn-sm btn-success flex-fill">
+                            <i class="fas fa-eye"></i> View Results
+                        </a>
+                        <a href="{{ url_for('submit_feedback', exam_id=exam.id) }}" class="btn btn-sm btn-info flex-fill">
+                            <i class="fas fa-comment"></i> Feedback
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('exam_details', exam_id=exam.id) }}" class="btn btn-sm btn-primary flex-fill">
+                            <i class="fas fa-info-circle"></i> View Details
+                        </a>
+                        <a href="{{ url_for('download_question_paper1', exam_id=exam.id) }}" class="btn btn-sm btn-secondary flex-fill">
+                            <i class="fas fa-download"></i> Download Paper
+                        </a>
+                        <a href="{{ url_for('upload_answer_sheet', exam_id=exam.id) }}" class="btn btn-sm btn-success flex-fill">
+                            <i class="fas fa-upload"></i> Submit Answer
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> No exams available at the moment. Please check back later.
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.exam-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.exam-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="fas fa-file-alt"></i> Exam Details</h4>
+                </div>
+                
+                <div class="card-body">
+                    <h3 class="mb-4">{{ exam.exam_title }}</h3>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <label>Subject:</label>
+                                <p>{{ exam.subject_name }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <label>Class:</label>
+                                <p>{{ exam.class_name }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <label>Total Questions:</label>
+                                <p><span class="badge bg-info">{{ exam.total_questions }}</span></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <label>Total Marks:</label>
+                                <p><span class="badge bg-success">{{ exam.total_marks }}</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <label>Duration:</label>
+                                <p>{{ exam.duration_minutes }} minutes</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <label>Difficulty:</label>
+                                <p>
+                                    <span class="badge bg-{{ 'success' if exam.difficulty_level == 'Easy' else ('warning' if exam.difficulty_level == 'Medium' else 'danger') }}">
+                                        {{ exam.difficulty_level }}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <div class="info-box">
+                                <label>Exam Period:</label>
+                                <p>
+                                    <i class="far fa-calendar-alt"></i> 
+                                    From: {{ exam.start_date }}<br>
+                                    <i class="far fa-calendar-alt"></i> 
+                                    To: {{ exam.end_date }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if question_stats %}
+                    <div class="mb-3">
+                        <h5>Question Distribution:</h5>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Count</th>
+                                    <th>Total Marks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in question_stats %}
+                                <tr>
+                                    <td>{{ stat.question_type }}</td>
+                                    <td>{{ stat.count }}</td>
+                                    <td>{{ stat.total_marks }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                    
+                    {% if submission %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> 
+                        <strong>Already Submitted</strong> on {{ submission.uploaded_at }}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('submission_result', exam_id=exam.id) }}" class="btn btn-success">
+                            <i class="fas fa-eye"></i> View Results
+                        </a>
+                        <a href="{{ url_for('available_exams') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Exams
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <h5><i class="fas fa-exclamation-triangle"></i> Important Instructions:</h5>
+                        <ul>
+                            <li>Download the question paper first</li>
+                            <li>Answer all questions clearly</li>
+                            <li>Scan or convert your answers to a single PDF file</li>
+                            <li>Upload the PDF before the deadline</li>
+                            <li>Once submitted, you cannot resubmit</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('download_question_paper', exam_id=exam.id) }}" class="btn btn-info">
+                            <i class="fas fa-download"></i> Download Question Paper
+                        </a>
+                        <a href="{{ url_for('upload_answer_sheet', exam_id=exam.id) }}" class="btn btn-success">
+                            <i class="fas fa-upload"></i> Upload Answer Sheet
+                        </a>
+                        <a href="{{ url_for('available_exams') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.info-box {
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.info-box label {
+    font-weight: bold;
+    color: #666;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.info-box p {
+    margin: 0;
+    font-size: 1.1em;
+}
+</style>
+{% endblock %}

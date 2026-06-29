@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .plag-high   { background: #fff0f0; border-left: 4px solid #dc3545; }
+  .plag-medium { background: #fff8e1; border-left: 4px solid #ffc107; }
+  .plag-low    { background: #f0fff4; border-left: 4px solid #28a745; }
+
+  .plag-badge-high   { background:#dc3545; color:#fff; }
+  .plag-badge-medium { background:#ffc107; color:#333; }
+  .plag-badge-low    { background:#28a745; color:#fff; }
+
+  .answer-card { border:1px solid #dee2e6; border-radius:8px; margin-bottom:10px; }
+  .answer-header { background:#f8f9fa; padding:10px 14px; border-radius:8px 8px 0 0; cursor:pointer; }
+  .answer-body { padding:14px; display:none; }
+  .answer-body.show { display:block; }
+
+  .score-bar-wrap { background:#e9ecef; border-radius:20px; height:10px; }
+  .score-bar { height:10px; border-radius:20px; transition:width .4s; }
+
+  .student-card { border:1px solid #dee2e6; border-radius:10px; margin-bottom:18px; }
+  .student-header { padding:14px 18px; background:#f1f3f5; border-radius:10px 10px 0 0; }
+  .student-body { padding:14px 18px; }
+
+  .exam-section { margin-bottom:36px; }
+  .exam-title-bar { background:linear-gradient(135deg,#1a237e,#283593);
+                    color:#fff; padding:14px 20px; border-radius:10px 10px 0 0; }
+
+  .plag-meter { width:60px; height:60px; position:relative; }
+  .plag-label { font-size:11px; color:#666; margin-top:2px; }
+
+  .flag-icon { font-size:18px; }
+  .model-answer-box { background:#e8f5e9; border-left:4px solid #4caf50;
+                      padding:10px 14px; border-radius:4px; font-size:.87em; }
+  .student-answer-box { background:#e3f2fd; border-left:4px solid #2196f3;
+                        padding:10px 14px; border-radius:4px; font-size:.87em; }
+
+  .filter-bar { background:#fff; border:1px solid #dee2e6; border-radius:10px;
+                padding:16px 20px; margin-bottom:24px; }
+
+  .rank-badge { width:28px; height:28px; border-radius:50%; display:inline-flex;
+                align-items:center; justify-content:center; font-weight:700; font-size:.85em; }
+  .rank-1 { background:#ffd700; color:#333; }
+  .rank-2 { background:#c0c0c0; color:#333; }
+  .rank-3 { background:#cd7f32; color:#fff; }
+  .rank-n { background:#6c757d; color:#fff; }
+</style>
+
+<div class="container-fluid py-4">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center mb-3">
+    <i class="fas fa-poll fa-lg me-2 text-primary"></i>
+    <h4 class="mb-0 fw-bold">Student Results &amp; Plagiarism Report</h4>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar d-flex align-items-center gap-3 flex-wrap">
+    <label class="fw-semibold me-1 mb-0"><i class="fas fa-filter me-1"></i>Filter by Exam:</label>
+    <select id="examFilter" class="form-select form-select-sm" style="max-width:320px;"
+            onchange="location.href='{{ url_for('teacher_student_results') }}?exam_id='+this.value">
+      <option value="">-- All Exams --</option>
+      {% for exam in exams %}
+        <option value="{{ exam.id }}"
+          {% if selected_exam_id == exam.id %}selected{% endif %}>
+          {{ exam.exam_title }} ({{ exam.subject_name }})
+        </option>
+      {% endfor %}
+    </select>
+    {% if selected_exam_id %}
+      <a href="{{ url_for('teacher_student_results') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-times me-1"></i>Clear Filter
+      </a>
+    {% endif %}
+
+    <div class="ms-auto d-flex gap-2 align-items-center">
+      <span class="badge plag-badge-high px-2 py-1"><i class="fas fa-exclamation-triangle me-1"></i>High ≥70%</span>
+      <span class="badge plag-badge-medium px-2 py-1"><i class="fas fa-exclamation me-1"></i>Medium 40-69%</span>
+      <span class="badge plag-badge-low px-2 py-1"><i class="fas fa-check me-1"></i>Low &lt;40%</span>
+    </div>
+  </div>
+
+  {% if not result_data %}
+    <div class="alert alert-info">
+      <i class="fas fa-info-circle me-2"></i>No student submissions found for your exams yet.
+    </div>
+  {% endif %}
+
+  {% for exam in result_data %}
+  <div class="exam-section shadow-sm rounded">
+
+    <!-- Exam title bar -->
+    <div class="exam-title-bar d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h5 class="mb-0 fw-bold">{{ exam.exam_title }}</h5>
+        <small class="opacity-75">
+          <i class="fas fa-book me-1"></i>{{ exam.subject_name }}
+          &nbsp;|&nbsp;
+          <i class="fas fa-school me-1"></i>{{ exam.class_name }}
+        </small>
+      </div>
+      <div class="text-end">
+        <span class="badge bg-light text-dark px-3 py-2">
+          <i class="fas fa-users me-1"></i>{{ exam.students|length }} student(s)
+        </span>
+        <span class="badge bg-warning text-dark px-3 py-2 ms-1">
+          <i class="fas fa-star me-1"></i>Total Marks: {{ exam.total_marks or '—' }}
+        </span>
+        {% set flagged = exam.students | selectattr('any_plag_flag') | list | length %}
+        {% if flagged %}
+          <span class="badge bg-danger px-3 py-2 ms-1">
+            <i class="fas fa-flag me-1"></i>{{ flagged }} Plag Alert(s)
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Students table / cards -->
+    <div class="p-3" style="background:#fff; border-radius:0 0 10px 10px;">
+
+      <!-- Summary table -->
+      <div class="table-responsive mb-3">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Rank</th>
+              <th>Student</th>
+              <th>Roll No</th>
+              <th>Marks</th>
+              <th>Score %</th>
+              <th>Max Plag</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for st in exam.students %}
+            {% set rank_loop = loop.index %}
+            <tr class="{% if st.any_plag_flag %}table-danger{% endif %}">
+              <td>
+                <span class="rank-badge {% if rank_loop==1 %}rank-1{% elif rank_loop==2 %}rank-2{% elif rank_loop==3 %}rank-3{% else %}rank-n{% endif %}">
+                  {{ rank_loop }}
+                </span>
+              </td>
+              <td class="fw-semibold">{{ st.student_name }}</td>
+              <td><span class="text-muted">{{ st.roll_no or '—' }}</span></td>
+              <td>{{ st.earned_marks }} / {{ st.max_marks }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="score-bar-wrap flex-grow-1" style="min-width:60px;">
+                    <div class="score-bar {% if st.percentage >= 75 %}bg-success{% elif st.percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                         style="width:{{ [st.percentage, 100]|min }}%"></div>
+                  </div>
+                  <span class="small fw-bold">{{ st.percentage }}%</span>
+                </div>
+              </td>
+              <td>
+                {% set ps = st.max_plag_score %}
+                <span class="badge {% if ps >= 70 %}plag-badge-high{% elif ps >= 40 %}plag-badge-medium{% else %}plag-badge-low{% endif %} px-2 py-1">
+                  {{ ps }}%
+                </span>
+              </td>
+              <td>
+                {% if st.any_plag_flag %}
+                  <span class="text-danger fw-bold"><i class="fas fa-exclamation-triangle me-1"></i>Flagged</span>
+                {% else %}
+                  <span class="text-success"><i class="fas fa-check-circle me-1"></i>OK</span>
+                {% endif %}
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary"
+                        onclick="toggleStudent('st_{{ exam.exam_id }}_{{ st.student_id }}')">
+                  <i class="fas fa-eye me-1"></i>Details
+                </button>
+              </td>
+            </tr>
+
+            <!-- Expandable detail row -->
+            <tr id="st_{{ exam.exam_id }}_{{ st.student_id }}" style="display:none;">
+              <td colspan="8" class="p-0">
+                <div class="p-3 bg-light">
+
+                  {% for ans in st.answers %}
+                  <div class="answer-card mb-2
+                    {% if ans.plag_flag %}plag-high{% elif ans.plag_score >= 40 %}plag-medium{% else %}plag-low{% endif %}">
+
+                    <div class="answer-header d-flex justify-content-between align-items-center"
+                         onclick="toggleAnswer('ans_{{ exam.exam_id }}_{{ st.student_id }}_{{ loop.index }}')">
+                      <div>
+                        <span class="fw-bold">{{ ans.question_id }}</span>
+                        <span class="text-muted ms-2 small">
+                          {{ (ans.question_text or '')[:80] }}{% if ans.question_text and ans.question_text|length > 80 %}…{% endif %}
+                        </span>
+                      </div>
+                      <div class="d-flex align-items-center gap-2">
+                        <!-- Score chip -->
+                        <span class="badge bg-primary px-2">
+                          {{ ans.total_score | round(1) if ans.total_score else 0 }} / {{ ans.question_marks or '?' }} marks
+                        </span>
+                        <!-- Plag chip -->
+                        <span class="badge
+                          {% if ans.plag_flag %}plag-badge-high
+                          {% elif ans.plag_score >= 40 %}plag-badge-medium
+                          {% else %}plag-badge-low{% endif %} px-2">
+                          <i class="fas fa-copy me-1"></i>Plag: {{ ans.plag_score }}%
+                        </span>
+                        <i class="fas fa-chevron-down text-muted small"></i>
+                      </div>
+                    </div>
+
+                    <div class="answer-body" id="ans_{{ exam.exam_id }}_{{ st.student_id }}_{{ loop.index }}">
+
+                      {% if ans.plag_flag %}
+                      <div class="alert alert-danger py-2 px-3 mb-3 d-flex align-items-start gap-2">
+                        <i class="fas fa-exclamation-triangle mt-1"></i>
+                        <div>
+                          <strong>Plagiarism Alert:</strong>
+                          This answer is <strong>{{ ans.plag_score }}%</strong> similar to
+                          <strong>{{ ans.plag_match or 'another student' }}</strong>'s answer.
+                        </div>
+                      </div>
+                      {% elif ans.plag_score >= 40 %}
+                      <div class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-start gap-2">
+                        <i class="fas fa-exclamation mt-1"></i>
+                        <div>
+                          <strong>Moderate Similarity:</strong>
+                          {{ ans.plag_score }}% match with
+                          <strong>{{ ans.plag_match or 'another student' }}</strong>'s answer.
+                        </div>
+                      </div>
+                      {% endif %}
+
+                      <div class="row g-3">
+                        <div class="col-md-6">
+                          <p class="small fw-bold text-primary mb-1"><i class="fas fa-user-graduate me-1"></i>Student's Answer</p>
+                          <div class="student-answer-box">
+                            {{ ans.answer_text or '<em class="text-muted">No text answer (PDF upload)</em>' }}
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <p class="small fw-bold text-success mb-1"><i class="fas fa-check-circle me-1"></i>Model Answer</p>
+                          <div class="model-answer-box">
+                            {{ ans.model_answer or '<em class="text-muted">No model answer on record</em>' }}
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Score breakdown -->
+                      <div class="mt-3 d-flex gap-3 flex-wrap">
+                        <div class="text-center">
+                          <div class="small text-muted">Marks Earned</div>
+                          <div class="fw-bold text-primary">{{ ans.total_score | round(2) if ans.total_score else 0 }} / {{ ans.question_marks or '?' }}</div>
+                        </div>
+                        <div class="text-center">
+                          <div class="small text-muted">Content</div>
+                          <div class="fw-bold">{{ ans.content_score | round(1) if ans.content_score else 0 }}%</div>
+                        </div>
+                        <div class="text-center">
+                          <div class="small text-muted">Plag Score</div>
+                          <div class="fw-bold {% if ans.plag_flag %}text-danger{% elif ans.plag_score >= 40 %}text-warning{% else %}text-success{% endif %}">
+                            {{ ans.plag_score }}%
+                          </div>
+                        </div>
+                        {% if ans.plag_match %}
+                        <div class="text-center">
+                          <div class="small text-muted">Similar To</div>
+                          <div class="fw-bold text-danger small">{{ ans.plag_match }}</div>
+                        </div>
+                        {% endif %}
+                        <div class="text-center">
+                          <div class="small text-muted">Evaluated At</div>
+                          <div class="small text-muted">{{ ans.evaluated_at or '—' }}</div>
+                        </div>
+                      </div>
+
+                    </div><!-- /answer-body -->
+                  </div><!-- /answer-card -->
+                  {% endfor %}
+
+                </div>
+              </td>
+            </tr>
+
+            {% endfor %}
+          </tbody>
+        </table>
+      </div><!-- /table-responsive -->
+
+    </div>
+  </div><!-- /exam-section -->
+  {% endfor %}
+
+</div>
+
+<script>
+function toggleStudent(id) {
+  const row = document.getElementById(id);
+  if (!row) return;
+  row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+function toggleAnswer(id) {
+  const body = document.getElementById(id);
+  if (!body) return;
+  body.classList.toggle('show');
+}
+</script>
+{% endblock %}

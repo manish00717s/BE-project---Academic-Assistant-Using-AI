@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: smart-exam-evaluation
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: FLASK_DEBUG
+        value: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_PATH
+        value: database/database/evaluation_system.db
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+    disk:
+      name: exam-data
+      mountPath: /opt/render/project/src/uploads
+      sizeGB: 1

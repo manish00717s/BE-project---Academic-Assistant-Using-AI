@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4><i class="fas fa-upload"></i> Upload Answer Sheet</h4>
+                </div>
+                
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>Exam:</strong> {{ exam.exam_title }}<br>
+                        <strong>Subject:</strong> {{ exam.subject_name }}<br>
+                        <strong>Total Marks:</strong> {{ exam.total_marks }}<br>
+                        <!-- <strong>Deadline:</strong> {{ exam.end_date }} -->
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-info-circle"></i> Upload Guidelines:</h6>
+                        <ul class="mb-0">
+                            <li>File must be in PDF format</li>
+                            <li>Maximum file size: 16 MB</li>
+                            <li>Ensure all pages are clearly scanned</li>
+                            <li>Write question numbers clearly (e.g., Q1, Q2, etc.)</li>
+                            <li>Answer all questions in order</li>
+                            <li>Once uploaded, submission cannot be changed</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Select Answer Sheet PDF <span class="text-danger">*</span></label>
+                            <input type="file" name="answer_file" class="form-control" accept=".pdf" required id="pdfFile">
+                            <small class="text-muted">Accepted format: PDF only</small>
+                        </div>
+                        
+                        <div id="filePreview" class="mb-3" style="display: none;">
+                            <div class="alert alert-success">
+                                <i class="fas fa-file-pdf"></i> 
+                                <strong>Selected File:</strong> <span id="fileName"></span>
+                                <br>
+                                <strong>Size:</strong> <span id="fileSize"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="confirmCheck" required>
+                            <label class="form-check-label" for="confirmCheck">
+                                I confirm that I have answered all questions and my answer sheet is ready for submission. 
+                                I understand that I cannot resubmit after uploading.
+                            </label>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success" id="submitBtn" disabled>
+                                <i class="fas fa-upload"></i> Submit Answer Sheet
+                            </button>
+                            <a href="{{ url_for('exam_details', exam_id=exam.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('pdfFile').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        if (file.type !== 'application/pdf') {
+            alert('Please select a PDF file only!');
+            this.value = '';
+            document.getElementById('filePreview').style.display = 'none';
+            return;
+        }
+        
+        if (file.size > 16 * 1024 * 1024) {
+            alert('File size must be less than 16 MB!');
+            this.value = '';
+            document.getElementById('filePreview').style.display = 'none';
+            return;
+        }
+        
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+        document.getElementById('filePreview').style.display = 'block';
+    }
+});
+
+document.getElementById('confirmCheck').addEventListener('change', function() {
+    debugger
+    const fileInput = document.getElementById('pdfFile');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (this.checked && fileInput.files.length > 0) {
+        submitBtn.disabled = false;
+    } else {
+        submitBtn.disabled = true;
+    }
+});
+
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    if (!confirm('Are you sure you want to submit? You cannot change your submission after uploading.')) {
+        e.preventDefault();
+    } else {
+        document.getElementById('submitBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+        document.getElementById('submitBtn').disabled = true;
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,29 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment variables (keep on server, don't push to GitHub)
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Uploads (managed by persistent disk on Render)
+uploads/student_answers/
+uploads/answer_sheets/
+
+# Old backup
+app copy.py
+database.zip
+Project Images.zip

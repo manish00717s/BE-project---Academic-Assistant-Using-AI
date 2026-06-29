@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}View Syllabus{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="fas fa-book-open me-2"></i>Uploaded Syllabus</h4>
+            {% if session.role == 'Teacher' %}
+            <a href="{{ url_for('upload_syllabus') }}" class="btn btn-light btn-sm">
+                <i class="fas fa-plus me-2"></i>Upload New
+            </a>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if syllabus_list %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Title</th>
+                            <th>Subject</th>
+                            <th>Class</th>
+                            <th>Uploaded By</th>
+                            <th>Upload Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for syllabus in syllabus_list %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>
+                                <i class="fas fa-file-pdf text-danger me-2"></i>
+                                {{ syllabus.title }}
+                            </td>
+                            <td><span class="badge bg-primary">{{ syllabus.subject_name }}</span></td>
+                            <td><span class="badge bg-secondary">{{ syllabus.class_name }}</span></td>
+                            <td>{{ syllabus.uploaded_by_name }}</td>
+                            <td>{{ syllabus.upload_date }}</td>
+                            <td>
+                                <span class="badge bg-success">{{ syllabus.status }}</span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('download_syllabus', syllabus_id=syllabus.id) }}" 
+                                   class="btn btn-sm btn-primary" title="Download">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                {% if session.role == 'Teacher' %}
+                                <a href="{{ url_for('create_exam') }}?syllabus_id={{ syllabus.id }}" 
+                                   class="btn btn-sm btn-success" title="Create Exam">
+                                    <i class="fas fa-robot"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle fa-3x mb-3"></i>
+                <h5>No Syllabus Uploaded Yet</h5>
+                {% if session.role == 'Teacher' %}
+                <p>Click "Upload New" to add your first syllabus</p>
+                {% else %}
+                <p>No syllabus available at the moment</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

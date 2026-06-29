@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Pending Evaluations{% endblock %}
+{% block content %}
+<h3 class="mb-4"><i class="fas fa-tasks me-2"></i>Pending Evaluations</h3>
+
+{% if pending %}
+<div class="table-responsive">
+    <table class="table table-bordered align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>Student</th>
+                <th>Roll No</th>
+                <th>Class</th>
+                <th>Subject</th>
+                <th>Uploaded On</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ans in pending %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ ans.student_name }}</td>
+                <td>{{ ans.roll_no }}</td>
+                <td>{{ ans.class_name }}</td>
+                <td>{{ ans.subject_name }}</td>
+                <td>{{ ans.uploaded_at.strftime('%d-%m-%Y %H:%M') if ans.uploaded_at else '' }}</td>
+                <td>
+                    <a href="{{ url_for('provide_feedback', answer_id=ans.id) }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-pen me-1"></i>Evaluate
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle me-2"></i>No pending evaluations right now.
+</div>
+{% endif %}
+{% endblock %}

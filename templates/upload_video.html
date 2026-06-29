@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Video{% endblock %}
+
+{% block content %}
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Upload Video for Attendance</h1>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-video"></i> Video Upload
+                </h6>
+            </div>
+            <div class="card-body">
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" enctype="multipart/form-data" id="videoUploadForm">
+                    <div class="mb-4">
+                        <label for="attendance_date" class="form-label font-weight-bold">Attendance Date *</label>
+                        <input type="date" class="form-control" id="attendance_date" name="attendance_date" 
+                               value="{{ today_date }}" required>
+                        <small class="form-text text-muted">
+                            Select the date for which attendance should be marked
+                        </small>
+                    </div>
+                    <div class="mb-4">
+                        <label for="video" class="form-label font-weight-bold">Select Video File</label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="video" name="video" 
+                                   accept="video/*" required onchange="handleFileSelect(this)">
+                            <div class="input-group-append">
+                                <span class="input-group-text">
+                                    <i class="fas fa-video"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">
+                            Supported formats: MP4, AVI, MOV. Max size: 100MB
+                        </small>
+                    </div>
+
+                    <!-- Video Preview -->
+                    <div id="videoPreview" class="mb-4" style="display: none;">
+                        <label class="form-label font-weight-bold">Video Preview</label>
+                        <div class="border rounded p-3">
+                            <video id="previewVideo" width="100%" height="300" controls style="max-width: 500px;">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    </div>
+
+                    <!-- File Info -->
+                    <div id="fileInfo" class="mb-4" style="display: none;">
+                        <div class="alert alert-light">
+                            <h6><i class="fas fa-info-circle"></i> File Information</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>File Name:</strong> <span id="fileName"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>File Size:</strong> <span id="fileSize"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div id="uploadProgress" class="mb-4" style="display: none;">
+                        <label class="form-label">Upload Progress</label>
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <small class="text-muted">Processing video for face recognition...</small>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg" id="uploadBtn">
+                            <i class="fas fa-upload"></i> Upload and Process Video
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Instructions Card -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-success">
+                    <i class="fas fa-lightbulb"></i> Upload Instructions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item border-0 px-0">
+                        <h6 class="mb-1"><i class="fas fa-check text-success"></i> Best Practices</h6>
+                        <p class="mb-1 small">Record video with good lighting for better face detection</p>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <h6 class="mb-1"><i class="fas fa-users text-info"></i> Multiple Students</h6>
+                        <p class="mb-1 small">System can detect multiple students in a single video</p>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <h6 class="mb-1"><i class="fas fa-clock text-warning"></i> Processing Time</h6>
+                        <p class="mb-1 small">Processing may take a few minutes depending on video length</p>
+                    </div>
+                    <div class="list-group-item border-0 px-0">
+                        <h6 class="mb-1"><i class="fas fa-shield-alt text-primary"></i> Automatic Detection</h6>
+                        <p class="mb-1 small">Attendance is marked automatically for recognized faces</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-info">
+                    <i class="fas fa-cogs"></i> System Status
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="badge bg-success me-2">●</span>
+                    <small>Face Recognition Engine: Active</small>
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                    <span class="badge bg-success me-2">●</span>
+                    <small>Video Processing: Ready</small>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-success me-2">●</span>
+                    <small>Database Connection: OK</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Uploads -->
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-secondary">
+                    <i class="fas fa-history"></i> Tips
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-camera text-primary"></i>
+                        <small class="ml-2">Keep faces clearly visible</small>
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-sun text-warning"></i>
+                        <small class="ml-2">Ensure adequate lighting</small>
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-compress text-info"></i>
+                        <small class="ml-2">Avoid heavily compressed videos</small>
+                    </li>
+                    <li>
+                        <i class="fas fa-stopwatch text-success"></i>
+                        <small class="ml-2">5-30 second videos work best</small>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function handleFileSelect(input) {
+    const file = input.files[0];
+    if (file) {
+        // Show file info
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = formatFileSize(file.size);
+        document.getElementById('fileInfo').style.display = 'block';
+
+        // Show video preview
+        const video = document.getElementById('previewVideo');
+        const url = URL.createObjectURL(file);
+        video.src = url;
+        document.getElementById('videoPreview').style.display = 'block';
+
+        // Cleanup URL when video loads
+        video.onload = function() {
+            URL.revokeObjectURL(url);
+        };
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Handle form submission
+document.getElementById('videoUploadForm').onsubmit = function(e) {
+    const uploadBtn = document.getElementById('uploadBtn');
+    const progressDiv = document.getElementById('uploadProgress');
+    
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    progressDiv.style.display = 'block';
+    
+    // Simulate progress (in real implementation, this would be actual upload progress)
+    let progress = 0;
+    const progressBar = progressDiv.querySelector('.progress-bar');
+    
+    const interval = setInterval(() => {
+        progress += Math.random() * 10;
+        if (progress > 90) progress = 90;
+        progressBar.style.width = progress + '%';
+        
+        if (progress >= 90) {
+            clearInterval(interval);
+            progressBar.style.width = '100%';
+        }
+    }, 200);
+};
+</script>
+{% endblock %}

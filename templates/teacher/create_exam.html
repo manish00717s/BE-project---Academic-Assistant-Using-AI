@@ -1,0 +1,534 @@
+{% extends 'base.html' %}
+{% block title %}Create AI-Generated Exam{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Success Message Area -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <!-- Header -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-gradient-primary text-white" style="background-color: #3c78a4;">
+                    <h4 class="mb-0">
+                        <i class="fas fa-robot me-2"></i>
+                        Create AI-Generated Exam
+                    </h4>
+                    <small>Powered by Google Gemini AI - Subjective Questions Only</small>
+                </div>
+            </div>
+
+            <form method="POST" id="aiExamForm" action="{{ url_for('create_exam') }}">
+                <div class="row">
+                    <!-- Left Column: Basic Details -->
+                    <div class="col-lg-6">
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Basic Information
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Exam Title -->
+                                <div class="mb-3">
+                                    <label for="exam_title" class="form-label fw-bold required">
+                                        Exam Title
+                                    </label>
+                                    <input type="text" class="form-control" id="exam_title" name="exam_title"
+                                        placeholder="e.g., Physics Mid-Term 2024" required>
+                                </div>
+
+                                <!-- Subject -->
+                                <div class="mb-3">
+                                    <label for="subject_id" class="form-label fw-bold required">
+                                        Subject
+                                    </label>
+                                    <select class="form-select" id="subject_id" name="subject_id" required
+                                        onchange="loadSyllabus()">
+                                        <option value="">-- Select Subject --</option>
+                                        {% for subject in subjects %}
+                                        <option value="{{ subject.id }}">{{ subject.subject_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Class -->
+                                <div class="mb-3">
+                                    <label for="class_id" class="form-label fw-bold required">
+                                        Class
+                                    </label>
+                                    <select class="form-select" id="class_id" name="class_id" required
+                                        onchange="loadSyllabus()">
+                                        <option value="">-- Select Class --</option>
+                                        {% for cls in classes %}
+                                        <option value="{{ cls.id }}">{{ cls.class_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Syllabus -->
+                                <div class="mb-3">
+                                    <label for="syllabus_id" class="form-label fw-bold required">
+                                        Syllabus Reference
+                                    </label>
+                                    <select class="form-select" id="syllabus_id" name="syllabus_id" required>
+                                        <option value="">-- Select Syllabus --</option>
+                                    </select>
+                                    <small class="text-muted">
+                                        <i class="fas fa-lightbulb"></i>
+                                        AI will generate questions from this syllabus
+                                    </small>
+                                </div>
+
+                                <!-- Difficulty Level -->
+                                <div class="mb-3">
+                                    <label for="difficulty_level" class="form-label fw-bold required">
+                                        <i class="fas fa-signal me-2"></i>
+                                        Difficulty Level
+                                    </label>
+                                    <select class="form-select" id="difficulty_level" name="difficulty_level" required>
+                                        <option value="Easy">
+                                            🟢 Easy - Basic concepts and recall
+                                        </option>
+                                        <option value="Medium" selected>
+                                            🟡 Medium - Application and analysis
+                                        </option>
+                                        <option value="Hard">
+                                            🔴 Hard - Critical thinking and problem-solving
+                                        </option>
+                                    </select>
+                                    <div class="mt-2 p-2 bg-light rounded" id="difficulty_description">
+                                        <small><strong>Medium:</strong> Questions will test understanding and
+                                            application of concepts with 150-250 word answers.</small>
+                                    </div>
+                                </div>
+
+                                <!-- Duration -->
+                                <div class="mb-3">
+                                    <label for="duration" class="form-label fw-bold required">
+                                        Duration (Minutes)
+                                    </label>
+                                    <input type="number" class="form-control" id="duration" name="duration" min="15"
+                                        max="300" value="60" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Exam Schedule -->
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-calendar me-2"></i>
+                                    Schedule
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="start_date" class="form-label fw-bold required">
+                                        Start Date & Time
+                                    </label>
+                                    <input type="datetime-local" class="form-control" id="start_date" name="start_date"
+                                        required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="end_date" class="form-label fw-bold required">
+                                        End Date & Time
+                                    </label>
+                                    <input type="datetime-local" class="form-control" id="end_date" name="end_date"
+                                        required>
+                                </div>
+
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <small>Students can only access this exam during the scheduled period.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Question Configuration -->
+                    <div class="col-lg-6">
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-cogs me-2"></i>
+                                    Question Configuration
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Subjective Section -->
+                                <div class="card mb-3 border border-success">
+                                    <div class="card-header bg-success text-white">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-align-left me-2"></i>
+                                            Subjective/Descriptive Questions
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-6">
+                                                <label class="form-label fw-bold">Number of Questions *</label>
+                                                <input type="number" class="form-control" name="subjective_count"
+                                                    id="subjective_count" min="1" max="30" value="5"
+                                                    onchange="calculateTotalMarks()" required>
+                                                <small class="text-muted">Min: 1, Max: 30</small>
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label fw-bold">Marks per Question *</label>
+                                                <input type="number" class="form-control" name="subjective_marks"
+                                                    id="subjective_marks" min="1" max="20" value="5"
+                                                    onchange="calculateTotalMarks()" required>
+                                                <small class="text-muted">Min: 1, Max: 20</small>
+                                            </div>
+                                        </div>
+
+                                        <div class="alert alert-info mb-0">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <small>
+                                                <strong>Note:</strong> Questions will be descriptive and require
+                                                detailed written answers.
+                                                Students will upload PDF answers for AI evaluation.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Total Marks -->
+                                <div class="alert alert-success">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><i class="fas fa-calculator me-2"></i>Total Marks:</strong>
+                                            <div class="mt-1">
+                                                <small class="text-muted">
+                                                    <span id="question_count">5</span> questions ×
+                                                    <span id="marks_each">5</span> marks =
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <h3 class="mb-0 text-success"><span id="total_marks">25</span></h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Expected Answer Length Guide -->
+                        <div class="card shadow-sm mb-4 border-info">
+                            <div class="card-header bg-info bg-opacity-10">
+                                <h6 class="mb-0 text-info">
+                                    <i class="fas fa-ruler me-2"></i>
+                                    Expected Answer Length Guide
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <strong>🟢 Easy:</strong>
+                                    <small class="d-block text-muted">50-100 words per answer</small>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>🟡 Medium:</strong>
+                                    <small class="d-block text-muted">150-250 words per answer</small>
+                                </div>
+                                <div>
+                                    <strong>🔴 Hard:</strong>
+                                    <small class="d-block text-muted">250-400 words per answer</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI Generation Info -->
+                        <div class="card shadow-sm mb-4 border-primary">
+                            <div class="card-header bg-primary bg-opacity-10">
+                                <h6 class="mb-0 text-primary">
+                                    <i class="fas fa-robot me-2"></i>
+                                    AI Generation Process
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="timeline">
+                                    <div class="timeline-item mb-3">
+                                        <div class="timeline-marker bg-primary"></div>
+                                        <div class="timeline-content">
+                                            <strong>Step 1:</strong> Configure exam settings
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item mb-3">
+                                        <div class="timeline-marker bg-primary"></div>
+                                        <div class="timeline-content">
+                                            <strong>Step 2:</strong> Click "Generate Questions"
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item mb-3">
+                                        <div class="timeline-marker bg-info"></div>
+                                        <div class="timeline-content">
+                                            <strong>Step 3:</strong> AI creates questions based on syllabus
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item mb-3">
+                                        <div class="timeline-marker bg-warning"></div>
+                                        <div class="timeline-content">
+                                            <strong>Step 4:</strong> Review and edit questions
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item">
+                                        <div class="timeline-marker bg-success"></div>
+                                        <div class="timeline-content">
+                                            <strong>Step 5:</strong> Approve and publish
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary btn-lg" id="generateBtn">
+                                        <i class="fas fa-magic me-2"></i>
+                                        Generate Questions with AI
+                                        <span class="spinner-border spinner-border-sm ms-2 d-none"
+                                            id="loadingSpinner"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Created Exams List -->
+            {% if created_exams %}
+            <div class="card shadow-sm mt-5">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Your Created AI Exams
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Exam Title</th>
+                                    <th>Subject</th>
+                                    <th>Class</th>
+                                    <th>Difficulty</th>
+                                    <th>Questions</th>
+                                    <th>Total Marks</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for exam in created_exams %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ exam.exam_title }}</strong>
+                                    </td>
+                                    <td>{{ exam.subject_name }}</td>
+                                    <td>{{ exam.class_name }}</td>
+                                    <td>
+                                        <span
+                                            class="badge bg-{{ 'success' if exam.difficulty_level == 'Easy' else 'warning' if exam.difficulty_level == 'Medium' else 'danger' }}">
+                                            {{ exam.difficulty_level }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ exam.question_count }}</span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ exam.total_marks }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if exam.status == 'Draft' %}
+                                        <span class="badge bg-secondary">Draft</span>
+                                        {% elif exam.status == 'In Review' %}
+                                        <span class="badge bg-warning">In Review</span>
+                                        {% elif exam.status == 'Approved' %}
+                                        <span class="badge bg-success">Approved</span>
+                                        {% else %}
+                                        <span class="badge bg-info">{{ exam.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ exam.created_at[:16] }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            {% if exam.status in ['Draft', 'In Review'] %}
+                                            <a href="{{ url_for('review_exam', exam_id=exam.id) }}"
+                                                class="btn btn-warning" title="Review & Edit">
+                                                <i class="fas fa-edit"></i> Review
+                                            </a>
+                                            {% endif %}
+                                            <!-- <a href="{{ url_for('view_exam_details', exam_id=exam.id) }}" 
+                                               class="btn btn-info" title="View Details">
+                                                <i class="fas fa-eye"></i> Details
+                                            </a> -->
+                                            {% if exam.status == 'Approved' %}
+                                            <a href="{{ url_for('download_question_paper', exam_id=exam.id) }}"
+                                                class="btn btn-success" title="Download Question Paper">
+                                                <i class="fas fa-download"></i> Paper
+                                            </a>
+
+                                            {% endif %}
+                                            <button type="button" class="btn btn-danger"
+                                                onclick="confirmDeleteExam({{ exam.id }}, '{{ exam.exam_title }}')"
+                                                title="Delete Exam">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .timeline-item {
+        position: relative;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: -30px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 3px solid #fff;
+        box-shadow: 0 0 0 2px #dee2e6;
+    }
+
+    .timeline-content {
+        padding-left: 10px;
+    }
+
+    .required::after {
+        content: " *";
+        color: red;
+    }
+
+    .table td {
+        vertical-align: middle;
+    }
+</style>
+
+<script>
+    // Calculate total marks
+    function calculateTotalMarks() {
+        const count = parseInt(document.getElementById('subjective_count').value) || 0;
+        const marks = parseInt(document.getElementById('subjective_marks').value) || 0;
+        const total = count * marks;
+
+        document.getElementById('question_count').textContent = count;
+        document.getElementById('marks_each').textContent = marks;
+        document.getElementById('total_marks').textContent = total;
+    }
+
+    // Load syllabus based on subject and class
+    function loadSyllabus() {
+        const subjectId = document.getElementById('subject_id').value;
+        const classId = document.getElementById('class_id').value;
+
+        if (subjectId && classId) {
+            fetch(`/get_syllabus/${subjectId}/${classId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const select = document.getElementById('syllabus_id');
+                    select.innerHTML = '<option value="">-- Select Syllabus --</option>';
+                    data.forEach(syl => {
+                        select.innerHTML += `<option value="${syl.id}">${syl.title}</option>`;
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading syllabus:', error);
+                    alert('Error loading syllabus. Please try again.');
+                });
+        }
+    }
+
+    // Update difficulty description
+    document.getElementById('difficulty_level').addEventListener('change', function () {
+        const descriptions = {
+            'Easy': '<strong>Easy:</strong> Questions will focus on basic recall, definitions, and simple concepts. Expected answer length: 50-100 words.',
+            'Medium': '<strong>Medium:</strong> Questions will test understanding, application, and analysis of concepts. Expected answer length: 150-250 words.',
+            'Hard': '<strong>Hard:</strong> Questions will demand critical thinking, problem-solving, and synthesis. Expected answer length: 250-400 words.'
+        };
+        document.getElementById('difficulty_description').innerHTML =
+            '<small>' + descriptions[this.value] + '</small>';
+    });
+
+    // Form submission with loading indicator
+    document.getElementById('aiExamForm').addEventListener('submit', function (e) {
+        const questionCount = parseInt(document.getElementById('subjective_count').value) || 0;
+
+        if (questionCount < 1) {
+            e.preventDefault();
+            alert('Please enter at least 1 question');
+            return false;
+        }
+
+        if (questionCount > 30) {
+            e.preventDefault();
+            alert('Maximum 30 questions allowed');
+            return false;
+        }
+
+        // Show loading state
+        const btn = document.getElementById('generateBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating Questions... Please wait';
+        document.getElementById('loadingSpinner').classList.remove('d-none');
+    });
+
+    // Delete exam confirmation
+    function confirmDeleteExam(examId, examTitle) {
+        if (confirm(`Are you sure you want to delete the exam "${examTitle}"?\n\nThis action cannot be undone and will delete all questions associated with this exam.`)) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/teacher/delete_exam/${examId}`;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        calculateTotalMarks();
+    });
+</script>
+{% endblock %}

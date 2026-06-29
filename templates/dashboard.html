@@ -1,0 +1,161 @@
+<!-- File: templates/dashboard.html -->
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - AI Evaluation System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="mb-0">
+            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+        </h2>
+        <p class="text-muted">Welcome back, {{ session.full_name }}!</p>
+    </div>
+</div>
+
+
+<!-- Statistics Cards -->
+<div class="row g-4 mb-4 text-center">
+    <div class="col-md-4">
+        <div class="card stat-card d-flex justify-content-center align-items-center p-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: black;">
+            <div>
+                <h6 class="mb-2 fw-bold" style="color: black;">Total Users</h6>
+                <h2 class="mb-0 fw-bold" style="color: black;">{{ stats.total_users }}</h2>
+                <i class="fas fa-users mt-3 fa-2x" style="color: black;"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card d-flex justify-content-center align-items-center p-3" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: black;">
+            <div>
+                <h6 class="mb-2 fw-bold" style="color: black;">Total Students</h6>
+                <h2 class="mb-0 fw-bold" style="color: black;">{{ stats.total_students }}</h2>
+                <i class="fas fa-user-graduate mt-3 fa-2x" style="color: black;"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card d-flex justify-content-center align-items-center p-3" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: black;">
+            <div>
+                <h6 class="mb-2 fw-bold" style="color: black;">Total Teachers</h6>
+                <h2 class="mb-0 fw-bold" style="color: black;">{{ stats.total_teachers }}</h2>
+                <i class="fas fa-chalkboard-teacher mt-3 fa-2x" style="color: black;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4 text-center">
+    <div class="col-md-4">
+        <div class="card stat-card d-flex justify-content-center align-items-center p-3" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: black;">
+            <div>
+                <h6 class="mb-2 fw-bold" style="color: black;">Total Classes</h6>
+                <h2 class="mb-0 fw-bold" style="color: black;">{{ stats.total_classes }}</h2>
+                <i class="fas fa-school mt-3 fa-2x" style="color: black;"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card d-flex justify-content-center align-items-center p-3" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); color: black;">
+            <div>
+                <h6 class="mb-2 fw-bold" style="color: black;">Total Subjects</h6>
+                <h2 class="mb-0 fw-bold" style="color: black;">{{ stats.total_subjects }}</h2>
+                <i class="fas fa-book mt-3 fa-2x" style="color: black;"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card d-flex justify-content-center align-items-center p-3" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: black;">
+            <div>
+                <h6 class="mb-2 fw-bold" style="color: black;">Total Evaluations</h6>
+                <h2 class="mb-0 fw-bold" style="color: black;">{{ stats.total_evaluations }}</h2>
+                <i class="fas fa-clipboard-check mt-3 fa-2x" style="color: black;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Quick Actions (Admin Only) -->
+{% if session.role == 'Admin' %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-3">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <a href="{{ url_for('add_user') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-user-plus me-2"></i>Add User
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('add_class') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-plus-circle me-2"></i>Add Class
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('add_subject') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-plus-circle me-2"></i>Add Subject
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('users_list') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-users me-2"></i>View All Users
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-4">
+                    <i class="fas fa-history me-2"></i>Recent Activities
+                </h5>
+                {% if activities %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-user me-2"></i>User</th>
+                                <th><i class="fas fa-clipboard-list me-2"></i>Action</th>
+                                <th><i class="fas fa-clock me-2"></i>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for activity in activities %}
+                            <tr>
+                                <td>
+                                    <strong>{{ activity.full_name if activity.full_name else 'System' }}</strong>
+                                </td>
+                                <td>{{ activity.action }}</td>
+                                <td>
+                                    <span class="text-muted">
+                                        {{ activity.timestamp }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No recent activities</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

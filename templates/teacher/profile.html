@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Teacher Profile{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                <h4 class="fw-bold">{{ profile.full_name }}</h4>
+                <p class="text-muted">{{ profile.email }}</p>
+                <hr>
+                <p><strong>Assigned Class:</strong> {{ profile.class_name or 'N/A' }}</p>
+                <p><strong>Subject:</strong> {{ profile.subject_name or 'N/A' }}</p>
+                <p><strong>Qualification:</strong> {{ profile.qualification or 'N/A' }}</p>
+                <p><strong>Experience:</strong> {{ profile.experience_years or 'N/A' }} years</p>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-3">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+<!-- File: templates/users/edit.html -->
+{% extends 'base.html' %}
+
+{% block title %}Edit User - AI Evaluation System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>
+            <i class="fas fa-user-edit me-2"></i>Edit User
+        </h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{{ url_for('users_list') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Users
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('edit_user', user_id=user.id) }}" id="editUserForm">
+            <input type="hidden" name="role" value="{{ user.role }}">
+            
+            <!-- Basic Information -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="full_name" value="{{ user.full_name }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Email <span class="text-danger">*</span></label>
+                    <input type="email" class="form-control" name="email" value="{{ user.email }}" required>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Role</label>
+                    <input type="text" class="form-control" value="{{ user.role }}" disabled>
+                    <small class="text-muted">Role cannot be changed after creation</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Status <span class="text-danger">*</span></label>
+                    <select class="form-select" name="status" required>
+                        <option value="Active" {% if user.status == 'Active' %}selected{% endif %}>Active</option>
+                        <option value="Inactive" {% if user.status == 'Inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Student Specific Fields -->
+            {% if user.role == 'Student' and student_profile %}
+            <hr class="my-4">
+            <h5 class="mb-3"><i class="fas fa-user-graduate me-2"></i>Student Information</h5>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Roll Number <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="roll_no" value="{{ student_profile.roll_no }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Class <span class="text-danger">*</span></label>
+                    <select class="form-select" name="class_id" required>
+                        <option value="">Select Class</option>
+                        {% for class in classes %}
+                        <option value="{{ class.id }}" {% if student_profile.class_id == class.id %}selected{% endif %}>
+                            {{ class.class_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Teacher Specific Fields -->
+            {% if user.role == 'Teacher' and teacher_profile %}
+            <hr class="my-4">
+            <h5 class="mb-3"><i class="fas fa-chalkboard-teacher me-2"></i>Teacher Information</h5>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Qualification</label>
+                    <input type="text" class="form-control" name="qualification" value="{{ teacher_profile.qualification }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Experience (Years)</label>
+                    <input type="number" class="form-control" name="experience_years" value="{{ teacher_profile.experience_years }}" min="0">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Assigned Class</label>
+                    <select class="form-select" name="assigned_class_id">
+                        <option value="">Select Class</option>
+                        {% for class in classes %}
+                        <option value="{{ class.id }}" {% if teacher_profile.assigned_class_id == class.id %}selected{% endif %}>
+                            {{ class.class_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Assigned Subject</label>
+                    <select class="form-select" name="assigned_subject_id">
+                        <option value="">Select Subject</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject.id }}" {% if teacher_profile.assigned_subject_id == subject.id %}selected{% endif %}>
+                            {{ subject.subject_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            {% endif %}
+
+            <hr class="my-4">
+            <div class="text-end">
+                <a href="{{ url_for('users_list') }}" class="btn btn-secondary me-2">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>Update User
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

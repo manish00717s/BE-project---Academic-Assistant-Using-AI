@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% block title %}Teacher Dashboard{% endblock %}
+{% block content %}
+<h3 class="mb-4"><i class="fas fa-chalkboard-teacher me-2"></i>Teacher Dashboard</h3>
+
+<!-- Stats Section -->
+<div class="row text-center">
+    <!-- Total Exams -->
+    <div class="col-md-3 mb-4">
+        <div class="card shadow-sm border-0 text-white" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+            <div class="card-body d-flex flex-column justify-content-center align-items-center py-4">
+                <i class="fas fa-file-alt fa-2x mb-3"></i>
+                <h5 class="fw-bold mb-1">Total Exams</h5>
+                <h2 class="fw-bold mb-0">{{ stats.total_exams or 0 }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Uploaded Syllabus -->
+    <div class="col-md-3 mb-4">
+        <div class="card shadow-sm border-0 text-white" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+            <div class="card-body d-flex flex-column justify-content-center align-items-center py-4">
+                <i class="fas fa-book-open fa-2x mb-3"></i>
+                <h5 class="fw-bold mb-1">Syllabus Files</h5>
+                <h2 class="fw-bold mb-0">{{ stats.total_syllabus or 0 }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Draft Exams -->
+    <div class="col-md-3 mb-4">
+        <div class="card shadow-sm border-0 text-dark" style="background: linear-gradient(135deg, #ffeaa7, #fdcb6e);">
+            <div class="card-body d-flex flex-column justify-content-center align-items-center py-4">
+                <i class="fas fa-edit fa-2x mb-3 text-dark"></i>
+                <h5 class="fw-bold mb-1">Draft Exams</h5>
+                <h2 class="fw-bold mb-0">{{ stats.draft_exams or 0 }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approved Exams -->
+    <div class="col-md-3 mb-4">
+        <div class="card shadow-sm border-0 text-white" style="background: linear-gradient(135deg, #43cea2, #185a9d);">
+            <div class="card-body d-flex flex-column justify-content-center align-items-center py-4">
+                <i class="fas fa-check-circle fa-2x mb-3"></i>
+                <h5 class="fw-bold mb-1">Published Exams</h5>
+                <h2 class="fw-bold mb-0">{{ stats.approved_exams or 0 }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white fw-bold">
+        <i class="fas fa-bolt me-2"></i>Quick Actions
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <a href="{{ url_for('upload_syllabus') }}" class="btn btn-success w-100 py-3">
+                    <i class="fas fa-upload fa-2x d-block mb-2"></i>
+                    <span class="fw-bold">Upload Syllabus</span>
+                </a>
+            </div>
+            <div class="col-md-4 mb-3">
+                <a href="{{ url_for('create_exam') }}" class="btn btn-primary w-100 py-3">
+                    <i class="fas fa-robot fa-2x d-block mb-2"></i>
+                    <span class="fw-bold">Create AI Exam</span>
+                </a>
+            </div>
+            <!-- <div class="col-md-3 mb-3">
+                <a href="{{ url_for('create_exam') }}" class="btn btn-info w-100 py-3">
+                    <i class="fas fa-file-upload fa-2x d-block mb-2"></i>
+                    <span class="fw-bold">Upload Excel Exam</span>
+                </a>
+            </div> -->
+            <div class="col-md-4 mb-3">
+                <a href="{{ url_for('view_syllabus') }}" class="btn btn-warning w-100 py-3">
+                    <i class="fas fa-book fa-2x d-block mb-2"></i>
+                    <span class="fw-bold">View Syllabus</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Exams -->
+{% if recent_exams %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <span class="fw-bold">
+            <i class="fas fa-history me-2"></i>Recent Exams
+        </span>
+        <a href="{{ url_for('create_exam') }}" class="btn btn-sm btn-outline-primary">
+            View All <i class="fas fa-arrow-right ms-1"></i>
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Exam Title</th>
+                        <th>Subject</th>
+                        <th>Class</th>
+                        <th>Marks</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exam in recent_exams %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <strong>{{ exam.exam_title }}</strong>
+                            {% if exam.ai_generated %}
+                            <span class="badge bg-info ms-1" title="AI Generated">
+                                <i class="fas fa-robot"></i>
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-primary">{{ exam.subject_name }}</span></td>
+                        <td><span class="badge bg-secondary">{{ exam.class_name }}</span></td>
+                        <td><strong>{{ exam.total_marks }}</strong></td>
+                        <td>
+                            {% if exam.status == 'Draft' %}
+                            <span class="badge bg-warning">Draft</span>
+                            {% elif exam.status == 'Approved' %}
+                            <span class="badge bg-success">Published</span>
+                            {% elif exam.status == 'Completed' %}
+                            <span class="badge bg-secondary">Completed</span>
+                            {% else %}
+                            <span class="badge bg-info">{{ exam.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td><small>{{ exam.created_at }}</small></td>
+                        <td>
+                            {% if exam.status in ['Draft', 'In Review'] %}
+                            <a href="{{ url_for('review_exam', exam_id=exam.id) }}" class="btn btn-warning"
+                                title="Review & Edit">
+                                <i class="fas fa-edit"></i> Review
+                            </a>
+                            {% endif %}
+
+                            {% if exam.status == 'Approved' %}
+                            <a href="{{ url_for('download_question_paper', exam_id=exam.id) }}" class="btn btn-success"
+                                title="Download Question Paper">
+                                <i class="fas fa-download"></i> Paper
+                            </a>
+                            {% endif %}
+                        </td>
+
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Two Column Layout -->
+<div class="row">
+    <!-- Pending Actions -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-warning text-dark fw-bold">
+                <i class="fas fa-exclamation-triangle me-2"></i>Pending Actions
+            </div>
+            <div class="card-body">
+                {% if stats.draft_exams > 0 %}
+                <div class="alert alert-warning d-flex align-items-center mb-3">
+                    <i class="fas fa-edit fa-2x me-3"></i>
+                    <div>
+                        <strong>{{ stats.draft_exams }} Draft Exam(s)</strong><br>
+                        <small>Review and publish your draft exams</small>
+                    </div>
+                    <a href="{{ url_for('exam_list') }}?status=draft" class="btn btn-sm btn-warning ms-auto">
+                        Review <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                {% endif %}
+
+                {% if stats.pending_count and stats.pending_count > 0 %}
+                <div class="alert alert-info d-flex align-items-center mb-3">
+                    <i class="fas fa-tasks fa-2x me-3"></i>
+                    <div>
+                        <strong>{{ stats.pending_count }} Pending Evaluation(s)</strong><br>
+                        <small>Student answers waiting for review</small>
+                    </div>
+                    <a href="{{ url_for('pending_evaluations') }}" class="btn btn-sm btn-info ms-auto">
+                        View <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                {% endif %}
+
+                {% if not stats.draft_exams and not stats.pending_count %}
+                <div class="alert alert-success text-center">
+                    <i class="fas fa-check-circle fa-3x mb-2"></i>
+                    <p class="mb-0"><strong>All caught up!</strong><br>No pending actions at the moment.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Logs -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light fw-bold">
+                <i class="fas fa-history me-2"></i>Recent Activities
+            </div>
+            <div class="card-body">
+                {% if activities %}
+                <div class="list-group list-group-flush">
+                    {% for log in activities[:5] %}
+                    <div class="list-group-item px-0 border-0 border-bottom">
+                        <div class="d-flex align-items-start">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-circle text-primary" style="font-size: 8px;"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <p class="mb-1">{{ log.action }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>{{ log.timestamp }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info text-center mb-0">
+                    <i class="fas fa-info-circle me-2"></i>No recent activities found.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Information -->
+<div class="card shadow-sm">
+    <div class="card-header bg-light fw-bold">
+        <i class="fas fa-user-circle me-2"></i>My Profile
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Name:</strong> {{ session.full_name }}</p>
+                <p><strong>Email:</strong> {{ session.email }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Role:</strong> <span class="badge bg-primary">{{ session.role }}</span></p>
+                <a href="{{ url_for('teacher_profile') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-edit me-1"></i>Edit Profile
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Help Section -->
+<div class="card shadow-sm mt-4 border-info">
+    <div class="card-body">
+        <h5 class="card-title text-info">
+            <i class="fas fa-lightbulb me-2"></i>Need Help?
+        </h5>
+        <p class="mb-3">Here's how to get started with AI-powered exams:</p>
+        <ol class="mb-3">
+            <li><strong>Upload Syllabus:</strong> Upload your course PDF syllabus</li>
+            <li><strong>Create AI Exam:</strong> Let AI generate questions from your syllabus</li>
+            <li><strong>Review & Edit:</strong> Review and modify AI-generated questions</li>
+            <li><strong>Schedule & Publish:</strong> Set exam dates and publish to students</li>
+        </ol>
+        <div class="alert alert-info mb-0">
+            <i class="fas fa-robot me-2"></i>
+            <strong>Pro Tip:</strong> AI can generate both MCQ and subjective questions. You can mix both types in a
+            single exam for better assessment!
+        </div>
+    </div>
+</div>
+{% endblock %}

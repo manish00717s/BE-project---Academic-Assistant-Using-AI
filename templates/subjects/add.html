@@ -1,0 +1,46 @@
+<!-- File: templates/subjects/add.html -->
+{% extends 'base.html' %}
+
+{% block title %}Add Subject - AI Evaluation System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2>
+            <i class="fas fa-plus-circle me-2"></i>Add New Subject
+        </h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{{ url_for('subjects_list') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Subjects
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('add_subject') }}">
+            <div class="mb-3">
+                <label class="form-label">Subject Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="subject_name" required placeholder="e.g., Mathematics, Physics, English">
+                <small class="text-muted">Enter the subject name</small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <textarea class="form-control" name="description" rows="4" placeholder="Enter subject description (optional)"></textarea>
+            </div>
+
+            <hr class="my-4">
+            <div class="text-end">
+                <a href="{{ url_for('subjects_list') }}" class="btn btn-secondary me-2">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>Add Subject
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

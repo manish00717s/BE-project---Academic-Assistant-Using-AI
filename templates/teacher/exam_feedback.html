@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-chart-bar"></i> Feedback for: {{ exam.exam_title }}</h2>
+    
+    <div class="alert alert-info">
+        <strong>Subject:</strong> {{ exam.subject_name }} | 
+        <strong>Class:</strong> {{ exam.class_name }}
+    </div>
+
+    {% if stats %}
+    <!-- Statistics Cards -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4>{{ stats.total_feedback }}</h4>
+                    <p>Responses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4>{{ stats.avg_rating }} <i class="fas fa-star text-warning"></i></h4>
+                    <p>Avg Rating</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4>{{ stats.avg_difficulty }}/5</h4>
+                    <p>Avg Difficulty</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <canvas id="ratingChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Feedback -->
+    <div class="mt-4">
+        <h4>Student Responses</h4>
+        {% for fb in feedbacks %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6>{{ fb.student_name }} ({{ fb.roll_no }})</h6>
+                        <div>
+                            Rating: 
+                            {% for i in range(fb.rating) %}
+                            <i class="fas fa-star text-warning"></i>
+                            {% endfor %}
+                        </div>
+                        <p class="mt-2">{{ fb.feedback_text }}</p>
+                        {% if fb.suggestions %}
+                        <p><em>Suggestions: {{ fb.suggestions }}</em></p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <small class="text-muted">{{ fb.submitted_at }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+    // Simple rating distribution chart
+    const ctx = document.getElementById('ratingChart').getContext('2d');
+    // Add Chart.js visualization here
+    </script>
+
+    {% else %}
+    <div class="alert alert-warning">No feedback received for this exam yet.</div>
+    {% endif %}
+
+    <a href="{{ url_for('view_feedback') }}" class="btn btn-secondary mt-3">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+</div>
+{% endblock %}

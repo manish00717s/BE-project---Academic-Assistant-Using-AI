@@ -1,0 +1,556 @@
+<!-- File: templates/attendance_report.html -->
+{% extends "base.html" %}
+
+{% block title %}Attendance Report - Student Attendance System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        border-radius: 15px;
+    }
+    .stat-card {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        color: white;
+        border-radius: 15px;
+    }
+    .attendance-table th {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+    }
+    .status-present {
+        background: #28a745;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 15px;
+        font-size: 0.8em;
+    }
+    .status-absent {
+        background: #dc3545;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 15px;
+        font-size: 0.8em;
+    }
+    @media print {
+        .no-print { display: none !important; }
+        .card { border: 1px solid #000 !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-chart-bar me-2"></i>Attendance Reports
+        </h1>
+    </div>
+</div>
+<!-- Add to your base.html or attendance_report.html head section -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<!-- Filters -->
+<div class="row mb-4 no-print">
+    <div class="col-12">
+        <div class="card filter-card">
+            <div class="card-body">
+                <form method="GET" class="row align-items-end">
+                    <div class="col-md-3 mb-2">
+                        <label for="start_date" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" 
+                               value="{{ start_date }}">
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label for="end_date" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" 
+                               value="{{ end_date }}">
+                    </div>
+                    <!-- <div class="col-md-3 mb-2">
+                        <label for="class_filter" class="form-label">Class Filter</label>
+                        <select class="form-control" id="class_filter" name="class_filter">
+                            <option value="">All Classes</option>
+                            <option value="10A">10A</option>
+                            <option value="10B">10B</option>
+                            <option value="11A">11A</option>
+                            <option value="11B">11B</option>
+                            <option value="12A">12A</option>
+                            <option value="12B">12B</option>
+                        </select>
+                    </div> -->
+                    <div class="col-md-3 mb-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter me-2"></i>Apply Filters
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+{% if summary %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie me-2"></i>Attendance Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for day in summary %}
+                    <div class="col-md-4 col-lg-3 mb-3">
+                        <div class="card stat-card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-calendar-day fa-2x mb-2"></i>
+                                <h6>{{ day.attendance_date }}</h6>
+                                <h4>{{ day.total_present }}</h4>
+                                <small>Students Present</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Action Buttons -->
+<div class="row mb-3 no-print">
+    <div class="col-12">
+        <div class="btn-group" role="group">
+            <button class="btn btn-success" onclick="exportToExcel()">
+                <i class="fas fa-file-excel me-2"></i>Export to Excel
+            </button>
+            <button class="btn btn-danger" onclick="exportToPDF()">
+                <i class="fas fa-file-pdf me-2"></i>Export to PDF
+            </button>
+            <button class="btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print me-2"></i>Print Report
+            </button>
+            <button class="btn btn-info" onclick="sendEmail()">
+                <i class="fas fa-envelope me-2"></i>Email Report
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Data Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-table me-2"></i>Detailed Attendance Records</h5>
+                <span class="badge bg-primary">{{ attendance_data|length }} Records</span>
+            </div>
+            <div class="card-body">
+                {% if attendance_data %}
+                <div class="table-responsive">
+                    <table class="table table-hover attendance-table" id="attendanceTable">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable(0)">
+                                    Student ID <i class="fas fa-sort"></i>
+                                </th>
+                                <th onclick="sortTable(1)">
+                                    Name <i class="fas fa-sort"></i>
+                                </th>
+                                <th>
+                                    Photo 
+                                </th>
+                                <th onclick="sortTable(3)">
+                                    Date <i class="fas fa-sort"></i>
+                                </th>
+                                <!-- <th onclick="sortTable(4)">
+                                    Time <i class="fas fa-sort"></i>
+                                </th> -->
+                                <th>Status</th>
+                                <!-- <th class="no-print">Confidence</th>
+                                <th class="no-print">Video File</th> -->
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in attendance_data %}
+                            <tr>
+                                <td>{{ record.student_id }}</td>
+                                <td>{{ record.full_name }}</td>
+                                <!-- <td>{{ record.class_section or '-' }}</td> -->
+                                <td>
+                                    <img src="{{ url_for('static', filename='uploads/student_photos/' ~ record.photo_filename) }}" 
+                                         class="student-photo" 
+                                         alt="Student Photo"
+                                         style="width: 50px; height: 50px; object-fit: cover; border-radius: 50%;">
+                                </td>
+                                <td>{{ record.attendance_date }}</td>
+                                <!-- <td>{{ record.time[:8] }}</td> -->
+                                <td>
+                                    <span class="status-{{ record.status.lower() }}">
+                                        {{ record.status }}
+                                    </span>
+                                </td>
+                                <!-- <td class="no-print">
+                                    {% if record.confidence_score %}
+                                        {{ "%.1f"|format(record.confidence_score * 100) }}%
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="no-print">
+                                    {% if record.video_file %}
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                onclick="viewVideo('{{ record.video_file }}')">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td> -->
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <nav class="mt-3 no-print">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item">
+                            <a class="page-link" href="#" onclick="previousPage()">Previous</a>
+                        </li>
+                        <li class="page-item active">
+                            <span class="page-link" id="currentPage">1</span>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#" onclick="nextPage()">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">No attendance records found</h5>
+                    <p class="text-muted">Try adjusting your date range or upload some videos</p>
+                    <a href="{{ url_for('upload_video') }}" class="btn btn-primary">
+                        <i class="fas fa-video me-2"></i>Upload Video
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Footer -->
+<div class="row mt-4 d-print-block">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <p class="mb-1"><strong>Student Attendance System</strong></p>
+                <!-- FIXED: Removed Jinja error -->
+                <p class="mb-1">Generated on: <span id="generatedDate"></span></p>
+                <p class="mb-0">Report Period: {{ start_date }} to {{ end_date }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Set generated date with JS instead of Jinja + moment()
+document.addEventListener("DOMContentLoaded", function () {
+    const now = new Date();
+    document.getElementById("generatedDate").textContent =
+        now.toISOString().slice(0, 19).replace("T", " ");
+});
+
+// Table sorting functionality
+function sortTable(columnIndex) {
+    const table = document.getElementById('attendanceTable');
+    const tbody = table.tBodies[0];
+    const rows = Array.from(tbody.rows);
+    
+    const currentSort = table.querySelector('th').dataset.sort || 'asc';
+    const newSort = currentSort === 'asc' ? 'desc' : 'asc';
+    table.querySelector('th').dataset.sort = newSort;
+    
+    rows.sort((a, b) => {
+        const cellA = a.cells[columnIndex].textContent.trim();
+        const cellB = b.cells[columnIndex].textContent.trim();
+        
+        if (newSort === 'asc') {
+            return cellA.localeCompare(cellB);
+        } else {
+            return cellB.localeCompare(cellA);
+        }
+    });
+    
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+
+
+
+// Export to Excel functionality
+function exportToExcel() {
+    try {
+        // Get table data
+        const table = document.getElementById('attendanceTable');
+        const workbook = XLSX.utils.table_to_book(table, {sheet: "Attendance Report"});
+        
+        // Generate filename with current date
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10);
+        const filename = `attendance_report_${dateStr}.xlsx`;
+        
+        // Save the file
+        XLSX.writeFile(workbook, filename);
+        
+        // Show success message
+        showNotification('Excel file downloaded successfully!', 'success');
+    } catch (error) {
+        console.error('Excel export error:', error);
+        showNotification('Error exporting to Excel. Please try again.', 'error');
+    }
+}
+
+// Export to PDF functionality
+function exportToPDF() {
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Add title
+        doc.setFontSize(20);
+        doc.text('Attendance Report', 14, 22);
+        
+        // Add date range
+        const startDate = document.getElementById('start_date').value || 'N/A';
+        const endDate = document.getElementById('end_date').value || 'N/A';
+        doc.setFontSize(12);
+        doc.text(`Period: ${startDate} to ${endDate}`, 14, 32);
+        
+        // Add generation date
+        const now = new Date();
+        doc.text(`Generated: ${now.toLocaleString()}`, 14, 40);
+        
+        // Get table data
+        const table = document.getElementById('attendanceTable');
+        const headers = [];
+        const data = [];
+        
+        // Extract headers
+        const headerCells = table.querySelectorAll('thead th');
+        headerCells.forEach(cell => {
+            headers.push(cell.textContent.replace('', '').trim()); // Remove sort icon
+        });
+        
+        // Extract data rows
+        const bodyRows = table.querySelectorAll('tbody tr');
+        bodyRows.forEach(row => {
+            if (row.style.display !== 'none') { // Only visible rows
+                const rowData = [];
+                const cells = row.querySelectorAll('td');
+                cells.forEach(cell => {
+                    rowData.push(cell.textContent.trim());
+                });
+                data.push(rowData);
+            }
+        });
+        
+        // Add table to PDF
+        doc.autoTable({
+            head: [headers],
+            body: data,
+            startY: 50,
+            styles: {
+                fontSize: 10,
+                cellPadding: 3
+            },
+            headStyles: {
+                fillColor: [102, 126, 234],
+                textColor: 255
+            },
+            alternateRowStyles: {
+                fillColor: [245, 245, 245]
+            }
+        });
+        
+        // Add footer
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.text(
+                `Page ${i} of ${pageCount}`, 
+                doc.internal.pageSize.width - 30, 
+                doc.internal.pageSize.height - 10
+            );
+        }
+        
+        // Generate filename and save
+        const dateStr = now.toISOString().slice(0, 10);
+        const filename = `attendance_report_${dateStr}.pdf`;
+        doc.save(filename);
+        
+        showNotification('PDF file downloaded successfully!', 'success');
+    } catch (error) {
+        console.error('PDF export error:', error);
+        showNotification('Error exporting to PDF. Please try again.', 'error');
+    }
+}
+
+// Enhanced Excel export with formatting
+function exportToExcelAdvanced() {
+    try {
+        const table = document.getElementById('attendanceTable');
+        const wb = XLSX.utils.book_new();
+        
+        // Extract data manually for better control
+        const headers = [];
+        const data = [];
+        
+        // Get headers
+        const headerCells = table.querySelectorAll('thead th');
+        headerCells.forEach(cell => {
+            headers.push(cell.textContent.replace('', '').trim());
+        });
+        
+        // Get data
+        const bodyRows = table.querySelectorAll('tbody tr');
+        bodyRows.forEach(row => {
+            if (row.style.display !== 'none') {
+                const rowData = [];
+                const cells = row.querySelectorAll('td');
+                cells.forEach(cell => {
+                    rowData.push(cell.textContent.trim());
+                });
+                data.push(rowData);
+            }
+        });
+        
+        // Create worksheet
+        const wsData = [headers, ...data];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        
+        // Set column widths
+        const colWidths = headers.map(() => ({wch: 15}));
+        ws['!cols'] = colWidths;
+        
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, "Attendance Report");
+        
+        // Add metadata sheet
+        const metaData = [
+            ['Report Information', ''],
+            ['Generated Date', new Date().toLocaleString()],
+            ['Start Date', document.getElementById('start_date').value || 'N/A'],
+            ['End Date', document.getElementById('end_date').value || 'N/A'],
+            ['Total Records', data.length],
+            ['', ''],
+            ['System Information', ''],
+            ['Application', 'Student Attendance System'],
+            ['Export Format', 'Excel (.xlsx)']
+        ];
+        
+        const metaWs = XLSX.utils.aoa_to_sheet(metaData);
+        XLSX.utils.book_append_sheet(wb, metaWs, "Report Info");
+        
+        // Save file
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10);
+        const filename = `attendance_report_${dateStr}.xlsx`;
+        
+        XLSX.writeFile(wb, filename);
+        showNotification('Enhanced Excel file downloaded successfully!', 'success');
+    } catch (error) {
+        console.error('Advanced Excel export error:', error);
+        showNotification('Error exporting to Excel. Please try again.', 'error');
+    }
+}
+
+// Notification helper function
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 5000);
+}
+
+// Update the existing functions
+function exportToExcel() {
+    exportToExcelAdvanced();
+}
+
+function sendEmail() {
+    alert('Email functionality can be implemented using backend email services');
+}
+
+function viewVideo(filename) {
+    alert('Video viewer can be implemented here for file: ' + filename);
+}
+
+// Pagination functions
+let currentPage = 1;
+const rowsPerPage = 20;
+
+function showPage(page) {
+    const table = document.getElementById('attendanceTable');
+    const tbody = table.tBodies[0];
+    const rows = tbody.rows;
+    const startIndex = (page - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    
+    for (let i = 0; i < rows.length; i++) {
+        if (i >= startIndex && i < endIndex) {
+            rows[i].style.display = '';
+        } else {
+            rows[i].style.display = 'none';
+        }
+    }
+    
+    document.getElementById('currentPage').textContent = page;
+}
+
+function previousPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        showPage(currentPage);
+    }
+}
+
+function nextPage() {
+    const table = document.getElementById('attendanceTable');
+    const tbody = table.tBodies[0];
+    const totalPages = Math.ceil(tbody.rows.length / rowsPerPage);
+    
+    if (currentPage < totalPages) {
+        currentPage++;
+        showPage(currentPage);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    showPage(1);
+});
+</script>
+{% endblock %}

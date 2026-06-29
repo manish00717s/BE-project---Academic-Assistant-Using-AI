@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block title %}Student Dashboard - AI Evaluation System{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold mb-0">
+                    <i class="fas fa-user-graduate me-2 text-primary"></i>Student Dashboard
+                </h2>
+                <p class="text-muted mb-0">Welcome, {{ session.full_name }}!</p>
+            </div>
+            <span class="badge bg-primary fs-6 p-2">
+                <i class="fas fa-id-badge me-1"></i>{{ session.role }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Section -->
+<div class="row g-4 mb-4 text-center">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-white" style="background: linear-gradient(135deg, #6a11cb, #2575fc);">
+            <div class="card-body py-4">
+                <i class="fas fa-file-upload fa-2x mb-2"></i>
+                <h6 class="fw-semibold text-white-50 mb-1">Total Submissions</h6>
+                <h2 class="fw-bold mb-0">{{ stats.total_submissions }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-white" style="background: linear-gradient(135deg, #43cea2, #185a9d);">
+            <div class="card-body py-4">
+                <i class="fas fa-clipboard-check fa-2x mb-2"></i>
+                <h6 class="fw-semibold text-white-50 mb-1">Evaluated Answers</h6>
+                <h2 class="fw-bold mb-0">{{ stats.evaluated_answers }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-dark" style="background: linear-gradient(135deg, #f7971e, #ffd200);">
+            <div class="card-body py-4">
+                <i class="fas fa-hourglass-half fa-2x mb-2"></i>
+                <h6 class="fw-semibold text-dark-50 mb-1">Pending Evaluations</h6>
+                <h2 class="fw-bold mb-0">{{ stats.pending_evaluations }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Available Exams -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Available Exams</h5>
+        <span class="badge bg-light text-primary">{{ available_exams|length }} Exam(s)</span>
+    </div>
+    <div class="card-body">
+        {% if available_exams %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Exam Title</th>
+                        <th>Subject</th>
+                        <th>Class</th>
+                        <th>Total Questions</th>
+                        <th>Total Marks</th>
+                        <th>Status</th>
+                        <th>Question Paper</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exam in available_exams %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><strong>{{ exam.exam_title }}</strong></td>
+                        <td><span class="badge bg-primary">{{ exam.subject_name }}</span></td>
+                        <td><span class="badge bg-info text-dark">{{ exam.class_name }}</span></td>
+                        <td>{{ exam.total_questions }}</td>
+                        <td>{{ exam.total_marks }}</td>
+                        <td><span class="badge bg-warning text-dark">Not Submitted</span></td>
+                        <td>
+                            <a href="{{ url_for('view_question_paper', exam_title=exam.exam_title) }}" 
+                               class="btn btn-sm btn-outline-primary" target="_blank">
+                                <i class="fas fa-file-pdf me-1"></i>View
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('upload_answer', exam_title=exam.exam_title) }}" 
+                               class="btn btn-sm btn-success">
+                                <i class="fas fa-upload me-1"></i>Submit
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info mb-0 text-center">
+            <i class="fas fa-info-circle me-2"></i>No pending exams available. All submitted!
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Submitted Exams -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-success text-white">
+        <button class="btn btn-link text-white text-decoration-none w-100 text-start d-flex justify-content-between align-items-center" 
+                type="button" data-bs-toggle="collapse" data-bs-target="#submittedExams">
+            <span><i class="fas fa-check-circle me-2"></i>Submitted Exams</span>
+            <span><i class="fas fa-chevron-down"></i></span>
+        </button>
+    </div>
+    <div id="submittedExams" class="collapse show">
+        <div class="card-body">
+            {% if submitted_exams %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Exam Title</th>
+                            <th>Subject</th>
+                            <th>Class</th>
+                            <th>Attempted</th>
+                            <th>Submission Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exam in submitted_exams %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td><strong>{{ exam.exam_title }}</strong></td>
+                            <td><span class="badge bg-primary">{{ exam.subject_name }}</span></td>
+                            <td><span class="badge bg-info text-dark">{{ exam.class_name }}</span></td>
+                            <td>{{ exam.attempted_questions }} Questions</td>
+                            <td>{{ exam.uploaded_at[:10] if exam.uploaded_at else 'N/A' }}</td>
+                            <td>
+                                {% if exam.evaluated_count > 0 %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check me-1"></i>Evaluated
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-clock me-1"></i>Pending
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('view_question_paper', exam_title=exam.exam_title) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye me-1"></i>View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info text-center mb-0">
+                <i class="fas fa-info-circle me-2"></i>No exams submitted yet.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

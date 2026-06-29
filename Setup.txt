@@ -1,0 +1,20 @@
+### Install Python 3.10.11
+
+
+1) Extract zip file and open folder in the vs code 
+2) open terminal in vs code 
+3) Run this command : python -m venv venv
+4) Run this command : venv\Scripts\activate
+5) Install all packages using this command in terminal : 
+    pip install -r requirements.txt 
+6) next command in terminal : python app.py 
+7) then you see something like this in the console 
+
+Running on http://127.0.0.1:5000
+
+click on that project is run the browser automatically 
+
+########## Admin Username #########################
+
+username : admin@aievaluation.com
+password : admin123

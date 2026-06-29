@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Provide Feedback{% endblock %}
+{% block content %}
+<h3 class="mb-4"><i class="fas fa-comments me-2"></i>Provide Feedback</h3>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="fw-bold mb-3">{{ answer.student_name }} (Roll No: {{ answer.roll_no }})</h5>
+        <p><strong>Subject:</strong> {{ answer.subject_name }}</p>
+        
+        <div class="p-3 bg-light rounded border mb-3">
+            <p class="mb-1"><strong>Question Text:</strong></p>
+            <p class="mb-3 text-secondary">{{ answer.question_text or 'Not available' }}</p>
+            <p class="mb-1"><strong>Model Answer:</strong></p>
+            <p class="mb-3 text-success" style="white-space: pre-wrap;">{{ answer.model_answer_text or 'Not available' }}</p>
+            <p class="mb-0"><strong>Maximum Marks:</strong> <span class="badge bg-warning text-dark">{{ answer.max_marks or 10 }}</span></p>
+        </div>
+
+        <p><strong>Student's Answer:</strong></p>
+        <div class="p-3 bg-light rounded border mb-3" style="white-space: pre-wrap;">{{ answer.answer_text or 'Empty / Not attempted' }}</div>
+
+        <form method="POST" action="">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Content Score (0–{{ answer.max_marks or 10 }})</label>
+                    <input type="number" class="form-control" name="content_score" step="0.1" min="0" max="{{ answer.max_marks or 10 }}" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Concept Score (0–{{ answer.max_marks or 10 }})</label>
+                    <input type="number" class="form-control" name="concept_score" step="0.1" min="0" max="{{ answer.max_marks or 10 }}" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Grammar Score (0–{{ answer.max_marks or 10 }})</label>
+                    <input type="number" class="form-control" name="grammar_score" step="0.1" min="0" max="{{ answer.max_marks or 10 }}" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Feedback Text</label>
+                <textarea name="feedback_text" rows="4" class="form-control" placeholder="Enter detailed feedback..." required></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Missing Keywords (if any)</label>
+                <input type="text" name="missing_keywords" class="form-control" placeholder="e.g., inheritance, polymorphism">
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-paper-plane me-2"></i>Submit Feedback
+            </button>
+            <a href="{{ url_for('pending_evaluations') }}" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-arrow-left me-1"></i>Back
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}

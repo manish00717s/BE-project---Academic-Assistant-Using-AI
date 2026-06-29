@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Student Profile{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-user-circle me-2"></i>My Profile</h4>
+            </div>
+            <div class="card-body">
+                {% if profile %}
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-1">Full Name</h6>
+                        <p class="fw-bold">{{ profile.full_name }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-1">Email</h6>
+                        <p class="fw-bold">{{ profile.email }}</p>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-1">Roll Number</h6>
+                        <p class="fw-bold">{{ profile.roll_no or 'Not Assigned' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-1">Class</h6>
+                        <p class="fw-bold">{{ profile.class_name or 'Not Assigned' }}</p>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-1">Registration Date</h6>
+                        <p class="fw-bold">
+                            <i class="fas fa-calendar-alt me-2"></i>
+                            {{ profile.registration_date[:10] if profile.registration_date else 'N/A' }}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-1">Status</h6>
+                        <p>
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i>Active
+                            </span>
+                        </p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Subjects Section -->
+                <div class="mt-4">
+                    <h5 class="mb-3">
+                        <i class="fas fa-book me-2"></i>My Subjects
+                        <span class="badge bg-primary">{{ subjects|length }}</span>
+                    </h5>
+                    {% if subjects %}
+                    <div class="row">
+                        {% for subject in subjects %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-book-open me-2 text-primary"></i>
+                                        {{ subject.subject_name }}
+                                    </h6>
+                                    {% if subject.description %}
+                                    <p class="card-text text-muted small mb-0">
+                                        {{ subject.description }}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>No subjects available for your class yet.
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Profile information not found.
+                </div>
+                {% endif %}
+
+                <div class="mt-4">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

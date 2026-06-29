@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-comments"></i> Student Feedback</h2>
+
+    <!-- Statistics -->
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ stats.total_feedback or 0 }}</h3>
+                    <p>Total Feedback</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ "%.2f"|format(stats.avg_rating or 0) }} <i class="fas fa-star text-warning"></i></h3>
+                    <p>Average Rating</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ "%.2f"|format(stats.avg_difficulty or 0) }}/5</h3>
+                    <p>Avg Difficulty</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback List -->
+    {% if feedbacks %}
+    <div class="table-responsive mt-4">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Exam</th>
+                    <th>Student</th>
+                    <th>Roll No</th>
+                    <th>Rating</th>
+                    <th>Difficulty</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fb in feedbacks %}
+                <tr>
+                    <td>{{ fb.exam_title }}</td>
+                    <td>{{ fb.student_name }}</td>
+                    <td>{{ fb.roll_no }}</td>
+                    <td>
+                        {% for i in range(fb.rating) %}
+                        <i class="fas fa-star text-warning"></i>
+                        {% endfor %}
+                    </td>
+                    <td><span class="badge bg-info">{{ fb.difficulty_rating }}/5</span></td>
+                    <td>{{ fb.submitted_at }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#feedbackModal{{ fb.id }}">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </td>
+                </tr>
+
+                <!-- Modal -->
+                <div class="modal fade" id="feedbackModal{{ fb.id }}">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5>Feedback Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p><strong>Student:</strong> {{ fb.student_name }} ({{ fb.roll_no }})</p>
+                                <p><strong>Exam:</strong> {{ fb.exam_title }}</p>
+                                <p><strong>Feedback:</strong> {{ fb.feedback_text }}</p>
+                                {% if fb.suggestions %}
+                                <p><strong>Suggestions:</strong> {{ fb.suggestions }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info mt-4">
+        <i class="fas fa-info-circle"></i> No feedback received yet.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

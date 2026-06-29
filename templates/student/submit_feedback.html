@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="fas fa-comment-dots"></i> Submit Exam Feedback</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>Exam:</strong> {{ exam.exam_title }}<br>
+                        <strong>Subject:</strong> {{ exam.subject_name }}<br>
+                        <strong>Class:</strong> {{ exam.class_name }}
+                    </div>
+
+                    <form method="POST">
+                        <!-- Overall Rating -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Overall Rating <span class="text-danger">*</span></label>
+                            <div class="rating-stars">
+                                {% for i in range(5, 0, -1) %}
+                                <input type="radio" name="rating" value="{{ i }}" id="rating{{ i }}" 
+                                       {% if existing_feedback and existing_feedback.rating == i %}checked{% endif %} required>
+                                <label for="rating{{ i }}">
+                                    <i class="fas fa-star"></i>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            <small class="text-muted">Rate the overall exam experience</small>
+                        </div>
+
+                        <!-- Difficulty Rating -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Difficulty Level <span class="text-danger">*</span></label>
+                            <select name="difficulty_rating" class="form-select" required>
+                                <option value="">Select difficulty</option>
+                                {% for i in range(1, 6) %}
+                                <option value="{{ i }}" {% if existing_feedback and existing_feedback.difficulty_rating == i %}selected{% endif %}>
+                                    {{ i }} - {% if i == 1 %}Very Easy{% elif i == 2 %}Easy{% elif i == 3 %}Moderate{% elif i == 4 %}Difficult{% else %}Very Difficult{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Feedback Text -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Your Feedback <span class="text-danger">*</span></label>
+                            <textarea name="feedback_text" class="form-control" rows="5" required 
+                                      placeholder="Share your experience with this exam...">{% if existing_feedback %}{{ existing_feedback.feedback_text }}{% endif %}</textarea>
+                        </div>
+
+                        <!-- Suggestions -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Suggestions for Improvement</label>
+                            <textarea name="suggestions" class="form-control" rows="3" 
+                                      placeholder="Any suggestions to improve this exam?">{% if existing_feedback %}{{ existing_feedback.suggestions }}{% endif %}</textarea>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Submit Feedback
+                            </button>
+                            <a href="{{ url_for('my_submissions') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.rating-stars {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: 5px;
+}
+
+.rating-stars input {
+    display: none;
+}
+
+.rating-stars label {
+    cursor: pointer;
+    font-size: 2rem;
+    color: #ddd;
+    transition: color 0.2s;
+}
+
+.rating-stars input:checked ~ label,
+.rating-stars label:hover,
+.rating-stars label:hover ~ label {
+    color: #ffc107;
+}
+</style>
+{% endblock %}

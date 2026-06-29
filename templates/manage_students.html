@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Students - Student Attendance System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .student-card {
+        transition: transform 0.3s ease;
+    }
+    .student-card:hover {
+        transform: translateY(-5px);
+    }
+    .student-photo {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 3px solid #667eea;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Students List</h2>
+        <a href="{{ url_for('register_student') }}" class="btn btn-primary">
+            <i class="bi bi-person-plus"></i> Add Student
+        </a>
+    </div>
+
+    <!-- Student List -->
+    <div class="row">
+        {% for student in students %}
+        <div class="col-md-4 mb-3">
+            <div class="card student-card shadow-sm p-3">
+                <div class="d-flex align-items-center">
+                    <img src="{{ url_for('static', filename='uploads/student_photos/' ~ student.photo_filename) }}" class="student-photo me-3" alt="Student Photo">
+                    <div>
+                        <h5 class="mb-0">{{ student.full_name }}</h5>
+                        <small class="text-muted">ID: {{ student.student_id }}</small><br>
+                        <small class="text-muted">Joined: {{ student.created_at }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-muted">No students found.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

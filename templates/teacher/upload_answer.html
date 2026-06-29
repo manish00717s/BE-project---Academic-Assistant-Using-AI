@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Upload Answer Sheet{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title mb-4"><i class="fas fa-cloud-upload-alt me-2"></i>Upload Answer Sheet</h4>
+                <form action="{{ url_for('upload_answer') }}" method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">Select Subject</label>
+                        <select name="subject_id" class="form-select" required>
+                            <option value="">-- Choose Subject --</option>
+                            {% for subject in subjects %}
+                            <option value="{{ subject.id }}">{{ subject.subject_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Upload Answer Sheet (PDF or Image)</label>
+                        <input type="file" name="answersheet" class="form-control" accept=".pdf,.png,.jpg,.jpeg" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-upload me-2"></i>Submit Answer Sheet
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

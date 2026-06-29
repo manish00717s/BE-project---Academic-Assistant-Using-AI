@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Attendance System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body class="bg-gradient-primary">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-xl-10 col-lg-12 col-md-9">
+                <div class="card o-hidden border-0 shadow-lg my-5">
+                    <div class="card-body p-0">
+                        <div class="row">
+                            <div class="col-lg-5 d-none d-lg-block bg-register-image"></div>
+                            <div class="col-lg-7">
+                                <div class="p-5">
+                                    <div class="text-center">
+                                        <h1 class="h4 text-gray-900 mb-4">Create an Account!</h1>
+                                        <p class="text-muted">Join the Attendance Management System</p>
+                                    </div>
+                                    
+                                    {% with messages = get_flashed_messages() %}
+                                        {% if messages %}
+                                            {% for message in messages %}
+                                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                                    {{ message }}
+                                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                                </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endwith %}
+                                    
+                                    <form class="user" method="POST" id="registerForm">
+                                        <div class="form-group row mb-3">
+                                            <div class="col-sm-6 mb-3 mb-sm-0">
+                                                <input type="text" class="form-control form-control-user" 
+                                                       name="username" placeholder="Username" required
+                                                       pattern="[a-zA-Z0-9_]{3,20}" 
+                                                       title="3-20 characters, letters, numbers, underscore only">
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <input type="email" class="form-control form-control-user" 
+                                                       name="email" placeholder="Email Address" required>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-group mb-3">
+                                            <select class="form-control form-control-user" name="role" required>
+                                                <option value="">Select Role</option>
+                                                <option value="teacher">Teacher</option>
+                                                <option value="admin">Administrator</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="form-group row mb-3">
+                                            <div class="col-sm-6 mb-3 mb-sm-0">
+                                                <input type="password" class="form-control form-control-user"
+                                                       name="password" placeholder="Password" required
+                                                       minlength="6" id="password">
+                                                <small class="form-text text-muted">Minimum 6 characters</small>
+                                            </div>
+                                            <div class="col-sm-6">
+                                                <input type="password" class="form-control form-control-user"
+                                                       name="confirm_password" placeholder="Repeat Password" required
+                                                       minlength="6" id="confirmPassword">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Password Strength Indicator -->
+                                        <div class="mb-3">
+                                            <div class="progress" style="height: 5px;">
+                                                <div class="progress-bar" role="progressbar" id="passwordStrength" 
+                                                     style="width: 0%"></div>
+                                            </div>
+                                            <small id="passwordText" class="form-text text-muted">Enter a password</small>
+                                        </div>
+                                        
+                                        <!-- Terms and Conditions -->
+                                        <div class="form-group mb-4">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="agreeTerms" required>
+                                                <label class="form-check-label small" for="agreeTerms">
+                                                    I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms and Conditions</a>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-primary btn-user btn-block w-100">
+                                            <i class="fas fa-user-plus"></i> Register Account
+                                        </button>
+                                    </form>
+                                    
+                                    <hr>
+                                    <div class="text-center">
+                                        <a class="small" href="{{ url_for('login') }}">
+                                            Already have an account? Login!
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms and Conditions Modal -->
+    <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="termsModalLabel">Terms and Conditions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>Attendance Management System - Terms of Use</h6>
+                    <p>By registering for this system, you agree to:</p>
+                    <ul>
+                        <li>Use the system only for legitimate educational purposes</li>
+                        <li>Maintain the confidentiality of your login credentials</li>
+                        <li>Not share your account with unauthorized persons</li>
+                        <li>Report any security issues immediately</li>
+                        <li>Comply with institutional policies regarding attendance</li>
+                    </ul>
+                    <p><strong>Privacy:</strong> Your personal information will be used only for attendance tracking and will not be shared with third parties without consent.</p>
+                    <p><strong>Data Security:</strong> We implement appropriate security measures to protect your data.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Password strength checker
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const passwordText = document.getElementById('passwordText');
+        
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            let strength = 0;
+            let text = 'Enter a password';
+            let color = 'bg-danger';
+            
+            if (password.length >= 6) strength += 25;
+            if (password.match(/[a-z]/)) strength += 25;
+            if (password.match(/[A-Z]/)) strength += 25;
+            if (password.match(/[0-9]/)) strength += 25;
+            
+            if (strength >= 75) {
+                text = 'Strong password';
+                color = 'bg-success';
+            } else if (strength >= 50) {
+                text = 'Medium password';
+                color = 'bg-warning';
+            } else if (strength >= 25) {
+                text = 'Weak password';
+                color = 'bg-danger';
+            }
+            
+            passwordStrength.style.width = strength + '%';
+            passwordStrength.className = 'progress-bar ' + color;
+            passwordText.textContent = text;
+        });
+        
+        // Form validation
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                alert('Passwords do not match!');
+                confirmPasswordInput.focus();
+                return false;
+            }
+            
+            if (password.length < 6) {
+                e.preventDefault();
+                alert('Password must be at least 6 characters long!');
+                passwordInput.focus();
+                return false;
+            }
+        });
+        
+        // Real-time password confirmation
+        confirmPasswordInput.addEventListener('input', function() {
+            const password = passwordInput.value;
+            const confirmPassword = this.value;
+            
+            if (password !== confirmPassword) {
+                this.setCustomValidity('Passwords do not match');
+                this.classList.add('is-invalid');
+            } else {
+                this.setCustomValidity('');
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            }
+        });
+    </script>
+</body>
+</html>
