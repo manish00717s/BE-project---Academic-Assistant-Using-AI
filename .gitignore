@@ -1,29 +1,24 @@
-# Virtual environment
-.venv/
-venv/
-env/
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
+node_modules
+dist
+dist-ssr
+*.local
 
-# Environment variables (keep on server, don't push to GitHub)
-.env
-
-# IDE
-.vscode/
-.idea/
-
-# OS files
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-Thumbs.db
-
-# Uploads (managed by persistent disk on Render)
-uploads/student_answers/
-uploads/answer_sheets/
-
-# Old backup
-app copy.py
-database.zip
-Project Images.zip
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

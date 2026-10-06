@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* THESE ARE PLACEHOLDER FOR EMPTY APP, FEEL FREE TO REPLACE WITH DESIRED DESIGN */
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --color-text-muted: var(--text-muted);
+}
+
+:root {
+  --text-muted: oklch(0.554 0.046 257.417);
+  --dotgrid-surface: oklch(0.97 0 0);
+  --dotgrid-glow-strong: oklch(0.45 0.05 250 / 12%);
+  --dotgrid-glow-mid: oklch(0.45 0.05 250 / 7%);
+  --dotgrid-glow-soft: oklch(0.45 0.05 250 / 4%);
+  --dotgrid-glow-faint: oklch(0.45 0.05 250 / 2%);
+  --dotgrid-dot: oklch(0 0 0 / 20%);
+}
+
+.dark {
+  --text-muted: oklch(0.9015 0.0154 241.79);
+  --dotgrid-surface: oklch(0.1638 0 0);
+  --dotgrid-glow-strong: oklch(0.41 0.14 250 / 45%);
+  --dotgrid-glow-mid: oklch(0.41 0.14 250 / 22%);
+  --dotgrid-glow-soft: oklch(0.41 0.14 250 / 10%);
+  --dotgrid-glow-faint: oklch(0.41 0.14 250 / 4%);
+  --dotgrid-dot: oklch(0.41 0.14 250 / 4%);
+}
+
+.bg-dotgrid-glow {
+  background-color: var(--dotgrid-surface);
+  background-image:
+    radial-gradient(
+      circle at 50% 118%,
+      var(--dotgrid-glow-strong) 0%,
+      var(--dotgrid-glow-mid) 22%,
+      var(--dotgrid-glow-soft) 32%,
+      var(--dotgrid-glow-faint) 38%,
+      transparent 45%
+    ),
+    radial-gradient(var(--dotgrid-dot) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    16px 16px;
+  background-position: center, center;
+}
